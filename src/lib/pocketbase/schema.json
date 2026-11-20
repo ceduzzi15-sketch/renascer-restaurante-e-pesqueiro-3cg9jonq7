@@ -1,0 +1,1073 @@
+{
+  "generatedAt": "2026-11-20T18:47:32.658Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'gestor')",
+        "view": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'gestor')",
+        "create": "(@request.auth.id = '' && @request.body.role = 'cliente') || (@request.auth.role = 'gestor' && @request.body.role != '')",
+        "update": "@request.auth.id != '' && ((id = @request.auth.id && @request.body.role:changed = false) || @request.auth.role = 'gestor')",
+        "delete": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'gestor')"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "avatar",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["gestor", "atendimento", "cliente"]
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cpf",
+          "type": "text",
+          "required": true,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''",
+        "CREATE UNIQUE INDEX `idx_users_cpf` ON `users` (cpf)"
+      ]
+    },
+    {
+      "name": "settings",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "@request.auth.role = 'gestor'",
+        "update": "@request.auth.role = 'gestor'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "key",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "business_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "tagline",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contact_phone",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "pix_key",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "map_query",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "bank_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "bank_agency",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "bank_account",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "commission_percent",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_settings_key ON settings (key)"]
+    },
+    {
+      "name": "menu_items",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["comida", "porcao", "bebida"]
+        },
+        {
+          "name": "price",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "image",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "image_url",
+          "type": "url",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_menu_items_category ON menu_items (category)",
+        "CREATE INDEX idx_menu_items_active ON menu_items (active)"
+      ]
+    },
+    {
+      "name": "customers",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || user = @request.auth.id)",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || user = @request.auth.id)",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || user = @request.auth.id)",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cpf",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "total_spent",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "last_visit",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_customers_cpf ON customers (cpf)",
+        "CREATE INDEX idx_customers_user ON customers (user)",
+        "CREATE INDEX idx_customers_name ON customers (name)"
+      ]
+    },
+    {
+      "name": "tabs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || customer_user = @request.auth.id)",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || customer_user = @request.auth.id)",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || (@request.auth.role = 'cliente' && @request.body.customer_user = @request.auth.id))",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "customer",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "customers"
+        },
+        {
+          "name": "customer_user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cpf",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "table_label",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["aberta", "aguardando_pagamento", "paga", "fechada"]
+        },
+        {
+          "name": "total",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "payment_method",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["pix", "dinheiro", "cartao"]
+        },
+        {
+          "name": "pix_status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["pendente", "confirmado"]
+        },
+        {
+          "name": "attendant",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "attendant_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "opened_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "closed_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_tabs_status ON tabs (status)",
+        "CREATE INDEX idx_tabs_customer_user ON tabs (customer_user)",
+        "CREATE INDEX idx_tabs_opened_at ON tabs (opened_at)"
+      ]
+    },
+    {
+      "name": "tab_items",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || tab.customer_user = @request.auth.id)",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || tab.customer_user = @request.auth.id)",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || (@request.auth.role = 'cliente' && tab.customer_user = @request.auth.id))",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'"
+      },
+      "fields": [
+        {
+          "name": "tab",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "tabs"
+        },
+        {
+          "name": "menu_item",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "menu_items"
+        },
+        {
+          "name": "item_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "unit_price",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "quantity",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "subtotal",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["solicitado", "preparo", "entregue", "cancelado"]
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ordered_by",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "commission_amount",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_tab_items_tab ON tab_items (tab)",
+        "CREATE INDEX idx_tab_items_menu_item ON tab_items (menu_item)",
+        "CREATE INDEX idx_tab_items_created ON tab_items (created)"
+      ]
+    },
+    {
+      "name": "service_rates",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "@request.auth.role = 'gestor'",
+        "update": "@request.auth.role = 'gestor'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pesca", "locacao"]
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "price",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "duration",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_service_rates_type ON service_rates (type)"]
+    },
+    {
+      "name": "activities",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || customer_user = @request.auth.id)",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || customer_user = @request.auth.id)",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pesca", "locacao"]
+        },
+        {
+          "name": "rate",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "service_rates"
+        },
+        {
+          "name": "customer",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "customers"
+        },
+        {
+          "name": "customer_user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "item_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "start_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "end_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["reservada", "em_andamento", "concluida", "cancelada"]
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_activities_type ON activities (type)",
+        "CREATE INDEX idx_activities_start_at ON activities (start_at)",
+        "CREATE INDEX idx_activities_status ON activities (status)"
+      ]
+    },
+    {
+      "name": "parking_reservations",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || customer_user = @request.auth.id)",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'gestor' || @request.auth.role = 'atendimento' || customer_user = @request.auth.id)",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "spot",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "vehicle",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "plate",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "customer",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "customers"
+        },
+        {
+          "name": "customer_user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "start_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "end_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["reservada", "ocupada", "liberada", "cancelada"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_parking_spot ON parking_reservations (spot)",
+        "CREATE INDEX idx_parking_status ON parking_reservations (status)"
+      ]
+    },
+    {
+      "name": "visits",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "view": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "customer",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "customers"
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cpf",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "purpose",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["restaurante", "pesca", "locacao", "visita"]
+        },
+        {
+          "name": "checked_in_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "checked_out_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_visits_checked_in ON visits (checked_in_at)"]
+    },
+    {
+      "name": "financial_entries",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "view": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["entrada", "saida"]
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "restaurante",
+            "pesca",
+            "locacao",
+            "estacionamento",
+            "fornecedor",
+            "manutencao",
+            "outros"
+          ]
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "entry_date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "source_type",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["manual", "comanda", "atividade"]
+        },
+        {
+          "name": "source_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "registered_by",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_financial_entry_date ON financial_entries (entry_date)",
+        "CREATE INDEX idx_financial_type ON financial_entries (type)",
+        "CREATE INDEX idx_financial_source ON financial_entries (source_type, source_id)"
+      ]
+    },
+    {
+      "name": "reviews",
+      "type": "base",
+      "apiRules": {
+        "list": "approved = true || user = @request.auth.id || @request.auth.role = 'gestor'",
+        "view": "approved = true || user = @request.auth.id || @request.auth.role = 'gestor'",
+        "create": "@request.auth.role = 'cliente'",
+        "update": "user = @request.auth.id || @request.auth.role = 'gestor'",
+        "delete": "user = @request.auth.id || @request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "rating",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "suggestion",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "photos",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "approved",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_reviews_approved ON reviews (approved)"]
+    },
+    {
+      "name": "promotions",
+      "type": "base",
+      "apiRules": {
+        "list": "active = true || @request.auth.role = 'gestor'",
+        "view": "active = true || @request.auth.role = 'gestor'",
+        "create": "@request.auth.role = 'gestor'",
+        "update": "@request.auth.role = 'gestor'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "text",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "promotion_date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "destination",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["whatsapp", "instagram", "facebook", "todos"]
+        },
+        {
+          "name": "image",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_promotions_date ON promotions (promotion_date)"]
+    }
+  ]
+}
