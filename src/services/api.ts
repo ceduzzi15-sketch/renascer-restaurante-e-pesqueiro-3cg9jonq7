@@ -4,6 +4,7 @@ import type {
   BusinessSettings,
   Customer,
   FinancialEntry,
+  MenuCategoryRecord,
   MenuItem,
   Promotion,
   ServiceRate,
@@ -53,8 +54,15 @@ export async function getBusinessSettings() {
   return records[0] ?? null
 }
 
+export async function getMenuCategories() {
+  return listRecords<MenuCategoryRecord>('menu_categories', { sort: 'order,name' })
+}
+
 export async function getPublicMenu() {
-  return listRecords<MenuItem>('menu_items', { filter: 'active = true', sort: 'category,name' })
+  return listRecords<MenuItem>('menu_items', {
+    filter: 'active = true',
+    sort: 'categoria_ordem,ordem,category,name',
+  })
 }
 
 export async function getActivePromotions() {

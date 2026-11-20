@@ -20,24 +20,31 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useBusinessSettings } from '@/hooks/use-business-settings'
-import { getActivePromotions, getPublicMenu } from '@/services/api'
+import { getActivePromotions, getMenuCategories, getPublicMenu } from '@/services/api'
 import { LOCAL_PHOTOS } from '@/lib/assets'
 import BrandMark from '@/components/BrandMark'
-import type { MenuItem, Promotion } from '@/types'
+import type { MenuCategoryRecord, MenuItem, Promotion } from '@/types'
 import { cn } from '@/lib/utils'
 
-const categoryLabels = { comida: 'Pratos', porcao: 'Porções', bebida: 'Bebidas' }
+const fallbackCategoryLabels: Record<string, string> = {
+  comida: 'Pratos',
+  porcao: 'Porções',
+  bebida: 'Bebidas',
+}
 
 export default function Index() {
   const { settings } = useBusinessSettings()
   const [menu, setMenu] = useState<MenuItem[]>([])
+  const [categories, setCategories] = useState<MenuCategoryRecord[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [selectedCatFilter, setSelectedCatFilter] = useState<string>('all')
 
   useEffect(() => {
-    void Promise.all([getPublicMenu(), getActivePromotions()])
-      .then(([menuData, promotionData]) => {
+    void Promise.all([getPublicMenu(), getMenuCategories(), getActivePromotions()])
+      .then(([menuData, catData, promotionData]) => {
         setMenu(menuData)
+        setCategories(catData)
         setPromotions(promotionData)
       })
       .catch(() => undefined)
@@ -247,55 +254,124 @@ export default function Index() {
           </div>
         </section>
 
-        <section id="cardapio" className="warm-grid bg-secondary/55 py-20 lg:py-28">
+        <section id="cardapio" className="py-20 lg:py-28 bg-[#0b241b]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="eyebrow mb-4">Sabores do recanto</p>
-              <h2 className="font-display text-4xl sm:text-5xl">Nosso cardápio</h2>
-              <p className="mt-4 text-muted-foreground">
-                Conheça algumas das opções preparadas pela nossa cozinha. Os valores ficam
-                disponíveis no atendimento e no acesso do cliente.
-              </p>
-            </div>
-            <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {menu.map((item, index) => {
-                const fallback =
-                  item.category === 'bebida'
-                    ? LOCAL_PHOTOS.lake
-                    : index % 2
-                      ? LOCAL_PHOTOS.fish
-                      : LOCAL_PHOTOS.dish
-                return (
-                  <article
-                    key={item.id}
-                    className="group overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_14px_45px_-30px_rgba(24,67,51,0.45)]"
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={item.image_url || fallback}
-                        alt={item.name}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                      <Badge className="absolute left-4 top-4 bg-primary/90 text-white">
-                        {categoryLabels[item.category]}
-                      </Badge>
-                    </div>
-                    <div className="p-5">
-                      <h3 className="text-xl">{item.name}</h3>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-            <div className="mt-10 text-center">
-              <Button asChild>
-                <Link to="/cadastro">
-                  Acessar cardápio completo e pedir <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+            {/* Visual do Cartaz com Verde-escuro, moldura dourada e RENASCERE */}
+            <div className="poster-container poster-double-border rounded-3xl p-6 sm:p-10 text-white relative overflow-hidden">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d4af37]/40 bg-[#0c241b]/80 px-4 py-1.5 text-xs font-semibold tracking-widest text-[#e5c158] uppercase">
+                  ✦ Tradição & Sabor ✦
+                </div>
+                <h2 className="mt-4 font-cinzel text-3xl font-extrabold uppercase tracking-wider text-[#e5c158] sm:text-5xl drop-shadow-md">
+                  RENASCERE
+                </h2>
+                <p className="font-condensed text-lg uppercase tracking-[0.25em] text-white/80">
+                  Restaurante e Pesqueiro
+                </p>
+                <div className="mx-auto my-4 h-[2px] w-28 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+                <p className="text-sm sm:text-base text-white/70 max-w-xl mx-auto">
+                  Conheça os pratos e porções servidos com o carinho de nossa cozinha. Os valores
+                  são informados no atendimento e no acesso restrito do cliente.
+                </p>
+
+                {/* Filtros rápidos por categoria caso existam */}
+                {categories.length > 0 && (
+                  <div className="mt-6 flex flex-wrap justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCatFilter('all')}
+                      className={cn(
+                        'rounded-full px-4 py-1.5 text-xs font-condensed uppercase tracking-wider transition border',
+                        selectedCatFilter === 'all'
+                          ? 'border-[#d4af37] bg-[#d4af37] text-[#0d271e] font-bold'
+                          : 'border-white/20 bg-black/20 text-white/80 hover:border-[#d4af37]/60',
+                      )}
+                    >
+                      Todos
+                    </button>
+                    {categories.map((c) => (
+                      <button
+                        key={c.category_id}
+                        type="button"
+                        onClick={() => setSelectedCatFilter(c.category_id)}
+                        className={cn(
+                          'rounded-full px-4 py-1.5 text-xs font-condensed uppercase tracking-wider transition border',
+                          selectedCatFilter === c.category_id
+                            ? 'border-[#d4af37] bg-[#d4af37] text-[#0d271e] font-bold'
+                            : 'border-white/20 bg-black/20 text-white/80 hover:border-[#d4af37]/60',
+                        )}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Itens do cardápio público (sem preços) */}
+              <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {menu
+                  .filter((item) =>
+                    selectedCatFilter === 'all' ? true : item.categoria_id === selectedCatFilter,
+                  )
+                  .map((item, index) => {
+                    const fallback =
+                      item.category === 'bebida'
+                        ? LOCAL_PHOTOS.lake
+                        : index % 2
+                          ? LOCAL_PHOTOS.fish
+                          : LOCAL_PHOTOS.dish
+                    const displayCategory =
+                      item.category_name || fallbackCategoryLabels[item.category] || 'Restaurante'
+
+                    return (
+                      <article
+                        key={item.id}
+                        className="group flex flex-col justify-between rounded-xl border border-[#d4af37]/30 bg-[#0d271e]/85 p-4 transition duration-300 hover:border-[#d4af37] hover:bg-[#12362a]"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 border-b border-[#d4af37]/20 pb-2 mb-2">
+                            <span className="font-condensed text-xs uppercase tracking-widest text-[#e5c158]">
+                              {displayCategory}
+                            </span>
+                            {item.subcategoria && (
+                              <span className="text-[11px] text-white/50 italic">
+                                {item.subcategoria}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="font-condensed text-xl font-bold uppercase tracking-wide text-white group-hover:text-[#e5c158] transition">
+                            {item.name}
+                          </h3>
+                          {(item.observacao || item.description) && (
+                            <p className="mt-1.5 text-xs leading-relaxed text-white/70">
+                              {item.observacao || item.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="mt-3 pt-2 text-right">
+                          <span className="text-[11px] font-condensed uppercase tracking-wider text-white/40">
+                            Disponível no pesqueiro
+                          </span>
+                        </div>
+                      </article>
+                    )
+                  })}
+              </div>
+
+              <div className="mt-12 text-center border-t border-[#d4af37]/30 pt-8">
+                <Button
+                  asChild
+                  className="bg-[#d4af37] text-[#0d271e] font-condensed text-base font-bold uppercase tracking-wider hover:bg-[#e5c158] px-8 h-12 shadow-lg"
+                >
+                  <Link to="/cadastro">
+                    Acessar cardápio completo e pedir <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Faixa decorativa xadrez inspirada no rodapé do cartaz */}
+              <div className="mt-8 h-3 w-full poster-ribbon rounded-sm opacity-85" />
             </div>
           </div>
         </section>

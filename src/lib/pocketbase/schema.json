@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T18:47:32.658Z",
+  "generatedAt": "2026-11-20T21:27:30.094Z",
   "collections": [
     {
       "name": "users",
@@ -219,11 +219,55 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "categoria_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "category_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "subcategoria",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "observacao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ordem",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "categoria_ordem",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "preco_formatado",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE INDEX idx_menu_items_category ON menu_items (category)",
-        "CREATE INDEX idx_menu_items_active ON menu_items (active)"
+        "CREATE INDEX idx_menu_items_active ON menu_items (active)",
+        "CREATE INDEX `idx_menu_items_categoria_id` ON `menu_items` (categoria_id)",
+        "CREATE INDEX `idx_menu_items_ordem` ON `menu_items` (ordem)"
       ]
     },
     {
@@ -1068,6 +1112,79 @@
         }
       ],
       "indexes": ["CREATE INDEX idx_promotions_date ON promotions (promotion_date)"]
+    },
+    {
+      "name": "menu_categories",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "category_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "subtitle",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "item_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "art_svg",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "art_png",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_menu_categories_cat_id ON menu_categories (category_id)",
+        "CREATE INDEX idx_menu_categories_order ON menu_categories (order)"
+      ]
     }
   ]
 }

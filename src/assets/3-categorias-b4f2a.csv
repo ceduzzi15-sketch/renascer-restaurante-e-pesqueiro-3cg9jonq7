@@ -1,0 +1,9 @@
+﻿ordem;categoria_id;nome;subtitulo;qtd_itens;arquivo_arte_svg;arquivo_arte_png
+1;almoco;Almoço Executivo;Segunda a Domingo;12;categoria-01-almoco.svg;categoria-01-almoco.png
+2;porcoes;Porções;Para dividir na mesa;22;categoria-02-porcoes.svg;categoria-02-porcoes.png
+3;drinks;Drinks;Da casa;10;categoria-03-drinks.svg;categoria-03-drinks.png
+4;destilados;Destilados;Dose;14;categoria-04-destilados.svg;categoria-04-destilados.png
+5;cervejas-600;Cervejas 600 ml;Garrafa;7;categoria-05-cervejas-600.svg;categoria-05-cervejas-600.png
+6;long-neck;Cervejas Long Neck;330 ml;6;categoria-06-long-neck.svg;categoria-06-long-neck.png
+7;latas;Cervejas Lata;350 ml;8;categoria-07-latas.svg;categoria-07-latas.png
+8;sem-alcool;Bebidas sem Álcool;Sucos, cafés e refrescos;18;categoria-08-sem-alcool.svg;categoria-08-sem-alcool.png

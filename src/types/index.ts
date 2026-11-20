@@ -32,6 +32,16 @@ export interface BusinessSettings extends BaseRecord {
 
 export type MenuCategory = 'comida' | 'porcao' | 'bebida'
 
+export interface MenuCategoryRecord extends BaseRecord {
+  category_id: string
+  name: string
+  subtitle?: string
+  order?: number
+  item_count?: number
+  art_svg?: string
+  art_png?: string
+}
+
 export interface MenuItem extends BaseRecord {
   name: string
   description: string
@@ -40,6 +50,13 @@ export interface MenuItem extends BaseRecord {
   image?: string
   image_url?: string
   active: boolean
+  categoria_id?: string
+  category_name?: string
+  subcategoria?: string
+  observacao?: string
+  ordem?: number
+  categoria_ordem?: number
+  preco_formatado?: string
 }
 
 export interface Customer extends BaseRecord {
