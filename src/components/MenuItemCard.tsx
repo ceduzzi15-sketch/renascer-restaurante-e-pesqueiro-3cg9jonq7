@@ -139,12 +139,7 @@ export default function MenuItemCard({
             </Button>
           ) : (
             <div className="flex gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => onEdit(item)}
-                aria-label="Editar"
-              >
+              <Button size="icon" variant="ghost" onClick={() => onEdit(item)} aria-label="Editar">
                 <Pencil className="h-4 w-4" />
               </Button>
               {user?.role === 'gestor' && (

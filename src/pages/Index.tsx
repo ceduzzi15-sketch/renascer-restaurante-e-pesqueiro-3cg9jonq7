@@ -52,7 +52,12 @@ export default function Index() {
   const [lightbox, setLightbox] = useState<GalleryMedia | null>(null)
 
   useEffect(() => {
-    void Promise.all([getPublicMenu(), getMenuCategories(), getActivePromotions(), fetchMenuFolders()])
+    void Promise.all([
+      getPublicMenu(),
+      getMenuCategories(),
+      getActivePromotions(),
+      fetchMenuFolders(),
+    ])
       .then(([menuData, catData, promotionData, folderData]) => {
         setMenu(menuData)
         setCategories(catData)
