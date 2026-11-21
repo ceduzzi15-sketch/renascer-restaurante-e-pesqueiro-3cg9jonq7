@@ -1,22 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import {
-  BookOpen,
-  FileSpreadsheet,
-  ImagePlus,
-  Pencil,
-  Plus,
-  Search,
-  ShoppingBag,
-  Sparkles,
-  Trash2,
-} from 'lucide-react'
+import { BookOpen, FileSpreadsheet, FolderOpen, ImagePlus, Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -24,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -45,29 +33,17 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
-import {
-  createRecord,
-  deleteRecord,
-  formatCurrency,
-  getFileUrl,
-  listRecords,
-  updateRecord,
-} from '@/services/api'
-import { LOCAL_PHOTOS } from '@/lib/assets'
+import { createRecord, deleteRecord, getFileUrl, listRecords, updateRecord } from '@/services/api'
+import { fetchMenuFolders, groupCategoriesByFolder } from '@/services/menu'
 import EmptyState from '@/components/EmptyState'
 import LoadingState from '@/components/LoadingState'
 import CsvImportModal from '@/components/CsvImportModal'
 import CategoryArtDialog from '@/components/CategoryArtDialog'
+import MenuFolderEditor from '@/components/MenuFolderEditor'
+import MenuItemCard from '@/components/MenuItemCard'
 import LogoEmblem from '@/components/LogoEmblem'
-import { isHighlightItem, sortHighlightsFirst } from '@/lib/highlights'
-import { cn } from '@/lib/utils'
-import type { MenuCategory, MenuCategoryRecord, MenuItem } from '@/types'
-
-const labels: Record<MenuCategory, string> = {
-  comida: 'Comidas',
-  porcao: 'Porções',
-  bebida: 'Bebidas',
-}
+import { sortHighlightsFirst } from '@/lib/highlights'
+import type { MenuCategory, MenuCategoryRecord, MenuFolder, MenuItem } from '@/types'
 
 const blankForm = {
   name: '',
@@ -87,8 +63,10 @@ export default function MenuPage() {
   const { toast } = useToast()
   const [items, setItems] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<MenuCategoryRecord[]>([])
+  const [folders, setFolders] = useState<MenuFolder[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('todos')
+  const [activeFolder, setActiveFolder] = useState<string>('todos')
+  const [folderEditorOpen, setFolderEditorOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [csvModalOpen, setCsvModalOpen] = useState(false)
@@ -101,12 +79,14 @@ export default function MenuPage() {
 
   const refresh = async () => {
     try {
-      const [itemRecords, categoryRecords] = await Promise.all([
+      const [itemRecords, categoryRecords, folderRecords] = await Promise.all([
         listRecords<MenuItem>('menu_items', { sort: 'categoria_ordem,ordem,category,name' }),
         listRecords<MenuCategoryRecord>('menu_categories', { sort: 'order,name' }).catch(() => []),
+        fetchMenuFolders().catch(() => []),
       ])
       setItems(itemRecords)
       setCategories(categoryRecords)
+      setFolders(folderRecords)
     } finally {
       setLoading(false)
     }
@@ -116,32 +96,32 @@ export default function MenuPage() {
     void refresh()
   }, [])
 
+  const sections = useMemo(
+    () => groupCategoriesByFolder(categories, folders),
+    [categories, folders],
+  )
+
+  const itemsOfCategory = (categoryId: string) =>
+    items.filter((item) => item.categoria_id === categoryId)
+
+  const matchesSearch = (item: MenuItem) => {
+    const term = search.toLowerCase()
+    if (!term) return true
+    return (
+      item.name.toLowerCase().includes(term) ||
+      (item.description && item.description.toLowerCase().includes(term)) ||
+      (item.subcategoria && item.subcategoria.toLowerCase().includes(term)) ||
+      (item.category_name && item.category_name.toLowerCase().includes(term))
+    )
+  }
+
+  const artImage = (category: MenuCategoryRecord) =>
+    getFileUrl(category, category.art_image as string, '200x200')
+
   const openArtDialog = (category: MenuCategoryRecord) => {
     setArtCategory(category)
     setArtDialogOpen(true)
   }
-
-  const visible = useMemo(
-    () =>
-      sortHighlightsFirst(
-        items.filter((item) => {
-          const matchesCategory =
-            selectedCategoryTab === 'todos' ||
-            item.categoria_id === selectedCategoryTab ||
-            item.category === selectedCategoryTab
-
-          const matchesSearch =
-            item.name.toLowerCase().includes(search.toLowerCase()) ||
-            (item.description && item.description.toLowerCase().includes(search.toLowerCase())) ||
-            (item.subcategoria && item.subcategoria.toLowerCase().includes(search.toLowerCase())) ||
-            (item.category_name && item.category_name.toLowerCase().includes(search.toLowerCase()))
-
-          const matchesRole = user?.role !== 'cliente' || item.active
-          return matchesCategory && matchesSearch && matchesRole
-        }),
-      ),
-    [items, selectedCategoryTab, search, user?.role],
-  )
 
   const openCreate = () => {
     setEditing(null)
@@ -212,13 +192,36 @@ export default function MenuPage() {
     }
   }
 
+  const activeFolderName =
+    activeFolder === 'todos'
+      ? 'Todos os setores'
+      : (sections.find((section) => (section.folder?.id ?? 'sem-pasta') === activeFolder)?.folder
+          ?.name ?? 'Sem pasta')
+
+  const folderTabs = [
+    { id: 'todos', name: 'Todos', count: items.length },
+    ...sections.map((section) => ({
+      id: section.folder?.id ?? 'sem-pasta',
+      name: section.folder?.name ?? 'Sem pasta',
+      count: section.categories.reduce(
+        (total, category) => total + itemsOfCategory(category.id).length,
+        0,
+      ),
+    })),
+  ]
+
+  const visibleSections =
+    activeFolder === 'todos'
+      ? sections
+      : sections.filter((section) => (section.folder?.id ?? 'sem-pasta') === activeFolder)
+
   return (
     <div className="page-shell space-y-6">
       {/* Visual do Cartaz no topo da tela de Cardápio */}
       <section className="poster-container poster-double-border rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <LogoEmblem className="h-16 w-16 rounded-xl border border-[#d4af37]/40 shadow-lg mb-2" />
+            <LogoEmblem className="mb-2 h-16 w-16 rounded-xl border border-[#d4af37]/40 shadow-lg" />
             <div className="inline-flex items-center gap-2 rounded-full border border-[#d4af37]/40 bg-[#0c241b]/80 px-3 py-1 text-xs font-semibold tracking-widest text-[#e5c158] uppercase">
               ✦ Cartaz Oficial ✦
             </div>
@@ -233,44 +236,20 @@ export default function MenuPage() {
                 ? 'Consulte os itens frescos de nossa cozinha e lance diretamente na sua comanda.'
                 : 'Gestão completa do cardápio: cadastre novos pratos ou importe tabelas via CSV com categorias e preços.'}
             </p>
-            {categories.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {categories.map((cat) => {
-                  const artUrl = cat.art_image ? getFileUrl(cat, cat.art_image, '200x200') : ''
-                  return (
-                    <button
-                      key={cat.category_id}
-                      type="button"
-                      onClick={() => openArtDialog(cat)}
-                      title={`Arte da categoria ${cat.name}`}
-                      className="group flex items-center gap-2 rounded-full border border-[#d4af37]/30 bg-[#0c241b]/80 py-1 pl-1 pr-3 transition hover:border-[#d4af37]"
-                    >
-                      {artUrl ? (
-                        <img
-                          src={artUrl}
-                          alt={`Arte da categoria ${cat.name}`}
-                          className="h-7 w-7 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-[#e5c158]">
-                          <ImagePlus className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                      <span className="font-condensed text-[11px] uppercase tracking-wider text-white/85">
-                        {cat.name}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
           </div>
 
           {isRole('gestor', 'atendimento') && (
             <div className="flex flex-wrap items-center gap-3">
               <Button
+                onClick={() => setFolderEditorOpen(true)}
+                variant="outline"
+                className="border-[#d4af37]/60 font-condensed text-sm uppercase tracking-wider text-white hover:bg-white/10 hover:text-white h-10"
+              >
+                <FolderOpen className="mr-2 h-4 w-4 text-[#e5c158]" /> Pastas
+              </Button>
+              <Button
                 onClick={() => setCsvModalOpen(true)}
-                className="bg-[#d4af37] text-[#0d271e] hover:bg-[#e5c158] font-condensed text-sm font-bold uppercase tracking-wider h-10 px-4 shadow-md"
+                className="bg-[#d4af37] font-condensed text-sm font-bold uppercase tracking-wider text-[#0d271e] hover:bg-[#e5c158] h-10 px-4 shadow-md"
               >
                 <FileSpreadsheet className="mr-2 h-4 w-4 text-[#0d271e]" />
                 Importar CSV
@@ -278,7 +257,7 @@ export default function MenuPage() {
               <Button
                 variant="outline"
                 onClick={openCreate}
-                className="border-[#d4af37]/60 text-white hover:bg-white/10 hover:text-white font-condensed text-sm uppercase tracking-wider h-10"
+                className="border-[#d4af37]/60 font-condensed text-sm uppercase tracking-wider text-white hover:bg-white/10 hover:text-white h-10"
               >
                 <Plus className="mr-2 h-4 w-4 text-[#e5c158]" /> Novo item
               </Button>
@@ -291,57 +270,19 @@ export default function MenuPage() {
       </section>
 
       {/* Barra de Filtros e Busca */}
-      <div className="flex flex-col justify-between gap-4 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center shadow-sm">
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <Button
-            variant={selectedCategoryTab === 'todos' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedCategoryTab('todos')}
-            className="font-condensed text-xs uppercase tracking-wider"
-          >
-            Todos ({items.length})
-          </Button>
-
-          {categories.length > 0 ? (
-            categories.map((cat) => (
-              <Button
-                key={cat.category_id}
-                variant={selectedCategoryTab === cat.category_id ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategoryTab(cat.category_id)}
-                className="font-condensed text-xs uppercase tracking-wider"
-              >
-                {cat.name}
-              </Button>
-            ))
-          ) : (
-            <>
-              <Button
-                variant={selectedCategoryTab === 'comida' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategoryTab('comida')}
-                className="font-condensed text-xs uppercase tracking-wider"
-              >
-                Comidas
-              </Button>
-              <Button
-                variant={selectedCategoryTab === 'porcao' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategoryTab('porcao')}
-                className="font-condensed text-xs uppercase tracking-wider"
-              >
-                Porções
-              </Button>
-              <Button
-                variant={selectedCategoryTab === 'bebida' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategoryTab('bebida')}
-                className="font-condensed text-xs uppercase tracking-wider"
-              >
-                Bebidas
-              </Button>
-            </>
-          )}
+          {folderTabs.map((tab) => (
+            <Button
+              key={tab.id}
+              variant={activeFolder === tab.id ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveFolder(tab.id)}
+              className="font-condensed text-xs uppercase tracking-wider"
+            >
+              {tab.name} ({tab.count})
+            </Button>
+          ))}
         </div>
 
         <div className="relative sm:w-72">
@@ -357,126 +298,74 @@ export default function MenuPage() {
 
       {loading ? (
         <LoadingState />
-      ) : visible.length === 0 ? (
+      ) : visibleSections.length === 0 || items.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title="Nenhum item encontrado"
           description="Ajuste os filtros ou utilize o botão 'Importar CSV' para carregar a lista de produtos."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {visible.map((item, index) => {
-            const image = item.image
-              ? getFileUrl(item, item.image, '600x400')
-              : item.image_url ||
-                (item.category === 'bebida'
-                  ? LOCAL_PHOTOS.lake
-                  : index % 2
-                    ? LOCAL_PHOTOS.fish
-                    : LOCAL_PHOTOS.dish)
-
-            const categoryBadgeLabel = item.category_name || labels[item.category] || 'Prato'
+        <div className="space-y-10">
+          {visibleSections.map((section) => {
+            const sectionCategories = section.categories.filter((category) =>
+              itemsOfCategory(category.id).some(matchesSearch),
+            )
+            if (sectionCategories.length === 0) return null
 
             return (
-              <article
-                key={item.id}
-                className={cn(
-                  'group flex flex-col justify-between overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md',
-                  isHighlightItem(item) &&
-                    'border-[#d4af37] shadow-[0_0_0_1px_rgba(212,175,55,0.45)]',
-                )}
-              >
-                <div>
-                  <div className="relative h-40 overflow-hidden bg-muted">
-                    <img
-                      src={image}
-                      alt={item.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                    <Badge className="absolute left-3 top-3 bg-[#0d271e] text-[#e5c158] border border-[#d4af37]/40 font-condensed text-xs uppercase tracking-wider">
-                      {categoryBadgeLabel}
-                    </Badge>
-                    {item.subcategoria && (
-                      <span className="absolute left-3 bottom-2.5 text-xs text-white/90 drop-shadow font-medium">
-                        {item.subcategoria}
-                      </span>
-                    )}
-                    {!item.active && (
-                      <Badge variant="destructive" className="absolute right-3 top-3">
-                        Indisponível
-                      </Badge>
-                    )}
-                    {isHighlightItem(item) && (
-                      <Badge className="absolute right-3 top-3 border border-[#d4af37] bg-[#d4af37] font-condensed text-[11px] font-bold uppercase tracking-wider text-[#0d271e]">
-                        <Sparkles className="mr-1 h-3 w-3" /> Destaque
-                      </Badge>
-                    )}
-                  </div>
+              <div key={section.folder?.id ?? 'sem-pasta'} className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <Badge
+                    variant="outline"
+                    className="border-[#d4af37]/50 bg-[#0d271e] px-3 py-1.5 font-condensed text-xs font-bold uppercase tracking-[0.18em] text-[#e5c158]"
+                  >
+                    <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
+                    {section.folder?.name ?? 'Sem pasta'}
+                  </Badge>
+                  {activeFolder !== 'todos' && (
+                    <span className="text-xs text-muted-foreground">{activeFolderName}</span>
+                  )}
+                </div>
 
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        {item.ordem ? (
-                          <span className="text-[11px] font-mono text-muted-foreground mr-1.5 font-bold">
-                            #{item.ordem}
-                          </span>
+                {sectionCategories.map((category) => {
+                  const categoryItems = sortHighlightsFirst(
+                    itemsOfCategory(category.id).filter(matchesSearch),
+                  )
+                  return (
+                    <div key={category.id} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        {category.art_image ? (
+                          <img
+                            src={artImage(category)}
+                            alt={`Arte da categoria ${category.name}`}
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
                         ) : null}
-                        <h2 className="font-condensed text-xl font-bold uppercase tracking-wide text-foreground group-hover:text-primary transition">
-                          {item.name}
+                        <h2 className="font-condensed text-lg font-bold uppercase tracking-wider text-foreground">
+                          {category.name}
                         </h2>
+                        <span className="text-xs text-muted-foreground">
+                          ({categoryItems.length} {categoryItems.length === 1 ? 'item' : 'itens'})
+                        </span>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        {categoryItems.map((item, index) => (
+                          <MenuItemCard
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            category={category}
+                            onEdit={openEdit}
+                            onDelete={setDeleting}
+                            onCategoryArt={openArtDialog}
+                          />
+                        ))}
                       </div>
                     </div>
-
-                    {(item.observacao || item.description) && (
-                      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                        {item.observacao || item.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t bg-muted/20 p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Preço</span>
-                      <span className="font-condensed text-xl font-extrabold text-primary">
-                        {item.preco_formatado || formatCurrency(item.price)}
-                      </span>
-                    </div>
-
-                    {user?.role === 'cliente' ? (
-                      <Button size="sm" asChild className="bg-primary">
-                        <a href="/app/comandas">
-                          <ShoppingBag className="mr-1.5 h-4 w-4" /> Pedir
-                        </a>
-                      </Button>
-                    ) : (
-                      <div className="flex gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => openEdit(item)}
-                          aria-label="Editar"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        {user?.role === 'gestor' && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => setDeleting(item)}
-                            className="text-destructive hover:text-destructive"
-                            aria-label="Excluir"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </article>
+                  )
+                })}
+              </div>
             )
           })}
         </div>
@@ -492,6 +381,20 @@ export default function MenuPage() {
         onOpenChange={setArtDialogOpen}
         onSaved={refresh}
       />
+
+      {/* Editor de pastas/setores do cardápio */}
+      <Dialog open={folderEditorOpen} onOpenChange={setFolderEditorOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Pastas do cardápio</DialogTitle>
+            <DialogDescription>
+              Organize as categorias em pastas/setores — elas aparecem agrupadas no painel e no
+              cardápio público.
+            </DialogDescription>
+          </DialogHeader>
+          <MenuFolderEditor categories={categories} onChanged={refresh} />
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
