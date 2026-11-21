@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useBusinessSettings } from '@/hooks/use-business-settings'
+import { useSiteContent } from '@/hooks/use-site-content'
 import { getActivePromotions, getFileUrl, getMenuCategories, getPublicMenu } from '@/services/api'
 import { getGalleryMedia } from '@/services/gallery'
 import type { GalleryMedia } from '@/types'
@@ -37,8 +38,16 @@ const fallbackCategoryLabels: Record<string, string> = {
   bebida: 'Bebidas',
 }
 
+type SiteImageField =
+  | 'cover_image'
+  | 'about_image_1'
+  | 'about_image_2'
+  | 'gallery_background'
+  | 'promo_image'
+
 export default function Index() {
   const { settings } = useBusinessSettings()
+  const { content, record: contentRecord } = useSiteContent()
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<MenuCategoryRecord[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
@@ -60,9 +69,17 @@ export default function Index() {
       .catch(() => undefined)
   }, [])
 
-  const phoneDigits = settings.contact_phone.replace(/\D/g, '')
+  const phoneDigits = content.contact_phone.replace(/\D/g, '')
   const whatsappDigits = phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`
-  const mapQuery = encodeURIComponent(settings.map_query || 'Pesqueiro e Restaurante, São Paulo')
+  const mapQuery = encodeURIComponent(content.map_query || 'Pesqueiro e Restaurante, São Paulo')
+  const siteImage = (field: SiteImageField, fallback: string) =>
+    contentRecord && contentRecord[field]
+      ? getFileUrl(contentRecord, contentRecord[field] as string)
+      : fallback
+  const siteBackground = (field: SiteImageField) =>
+    contentRecord && contentRecord[field]
+      ? getFileUrl(contentRecord, contentRecord[field] as string)
+      : null
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,7 +153,7 @@ export default function Index() {
       <main>
         <section className="relative min-h-[760px] overflow-hidden bg-primary pt-20 sm:min-h-[820px]">
           <img
-            src={LOCAL_PHOTOS.lake}
+            src={siteImage('cover_image', LOCAL_PHOTOS.lake)}
             alt="Vista ampla do lago do pesqueiro"
             className="absolute inset-0 h-full w-full object-cover"
           />
@@ -145,18 +162,18 @@ export default function Index() {
           <div className="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-4 py-20 sm:px-6 lg:px-8">
             <div className="max-w-3xl animate-rise text-white">
               <Badge className="mb-6 border border-amber-200/20 bg-amber-300/15 px-4 py-2 text-amber-200 hover:bg-amber-300/15">
-                <Waves className="mr-2 h-4 w-4" /> Seu refúgio à beira do lago
+                <Waves className="mr-2 h-4 w-4" /> {content.hero_badge}
               </Badge>
               <h1 className="text-5xl leading-[1.02] sm:text-6xl lg:text-7xl xl:text-[5.25rem]">
-                Onde a boa pesca encontra a boa mesa.
+                {content.hero_title}
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-relaxed text-white/72 sm:text-xl">
-                {settings.tagline}
+                {content.hero_subtitle}
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" variant="secondary" asChild className="h-12 px-6">
                   <a href="#cardapio">
-                    Conheça nosso cardápio <ChevronRight className="ml-2 h-4 w-4" />
+                    {content.hero_cta_primary} <ChevronRight className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
                 <Button
@@ -166,7 +183,7 @@ export default function Index() {
                   className="h-12 border-white/25 bg-white/5 px-6 text-white hover:bg-white/12 hover:text-white"
                 >
                   <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noreferrer">
-                    <MessageCircle className="mr-2 h-4 w-4" /> Fale conosco
+                    <MessageCircle className="mr-2 h-4 w-4" /> {content.hero_cta_secondary}
                   </a>
                 </Button>
               </div>
@@ -175,9 +192,9 @@ export default function Index() {
           <div className="absolute bottom-0 left-0 right-0">
             <div className="mx-auto grid max-w-7xl gap-px border-t border-white/10 bg-white/10 sm:grid-cols-3">
               {[
-                [Clock3, 'Aberto hoje', '07h às 20h'],
-                [MapPin, 'Natureza por perto', 'Lago, pesca e descanso'],
-                [UtensilsCrossed, 'Cozinha da casa', 'Sabor fresco todos os dias'],
+                [Clock3, content.strip_1_title, content.strip_1_text],
+                [MapPin, content.strip_2_title, content.strip_2_text],
+                [UtensilsCrossed, content.strip_3_title, content.strip_3_text],
               ].map(([Icon, title, text]) => (
                 <div
                   key={String(title)}
@@ -199,14 +216,11 @@ export default function Index() {
         <section id="experiencia" className="page-shell py-20 lg:py-28">
           <div className="grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-20">
             <div>
-              <p className="eyebrow mb-4">Uma experiência completa</p>
+              <p className="eyebrow mb-4">{content.about_eyebrow}</p>
               <h2 className="font-display text-4xl leading-tight sm:text-5xl">
-                Pesca, sabores e histórias para guardar.
+                {content.about_title}
               </h2>
-              <p className="mt-6 text-base leading-7 text-muted-foreground">
-                Venha passar o dia cercado pela natureza. Prepare a vara, aproveite o lago e encerre
-                o passeio com pratos preparados com cuidado pela nossa cozinha.
-              </p>
+              <p className="mt-6 text-base leading-7 text-muted-foreground">{content.about_text}</p>
               <div className="mt-8 grid gap-5 sm:grid-cols-2">
                 <div className="flex gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary">
@@ -214,11 +228,9 @@ export default function Index() {
                   </span>
                   <div>
                     <h3 className="font-sans text-sm font-bold tracking-normal">
-                      Pesca para todos
+                      {content.feature_1_title}
                     </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Diárias e estrutura para aproveitar o lago.
-                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">{content.feature_1_text}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -227,32 +239,28 @@ export default function Index() {
                   </span>
                   <div>
                     <h3 className="font-sans text-sm font-bold tracking-normal">
-                      Comida de verdade
+                      {content.feature_2_title}
                     </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Porções generosas e pratos feitos na hora.
-                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">{content.feature_2_text}</p>
                   </div>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <img
-                src={LOCAL_PHOTOS.fish}
+                src={siteImage('about_image_1', LOCAL_PHOTOS.fish)}
                 alt="Peixe pescado no lago"
                 className="h-[430px] w-full rounded-[2rem] object-cover object-center shadow-xl"
               />
               <div className="space-y-4 pt-12">
                 <img
-                  src={LOCAL_PHOTOS.dish}
+                  src={siteImage('about_image_2', LOCAL_PHOTOS.dish)}
                   alt="Porção de peixe crocante"
                   className="h-64 w-full rounded-[2rem] object-cover shadow-xl"
                 />
                 <div className="rounded-[2rem] bg-primary p-6 text-white">
                   <Quote className="h-7 w-7 text-amber-300" />
-                  <p className="mt-4 font-display text-xl">
-                    Um dia leve, do jeito que a natureza pede.
-                  </p>
+                  <p className="mt-4 font-display text-xl">{content.about_quote}</p>
                   <div className="mt-4 flex text-amber-300">
                     {Array.from({ length: 5 }).map((_, index) => (
                       <Star key={index} className="h-4 w-4 fill-current" />
@@ -283,12 +291,11 @@ export default function Index() {
                   → Ver fotos e vídeos do local
                 </a>
                 <p className="font-condensed text-lg uppercase tracking-[0.25em] text-white/80">
-                  Restaurante e Pesqueiro
+                  {content.menu_tagline}
                 </p>
                 <div className="mx-auto my-4 h-[2px] w-28 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
                 <p className="text-sm sm:text-base text-white/70 max-w-xl mx-auto">
-                  Conheça os pratos e porções servidos com o carinho de nossa cozinha. Os valores
-                  são informados no atendimento e no acesso restrito do cliente.
+                  {content.menu_description}
                 </p>
 
                 {/* Filtros rápidos por categoria caso existam */}
@@ -404,7 +411,7 @@ export default function Index() {
                   className="bg-[#d4af37] text-[#0d271e] font-condensed text-base font-bold uppercase tracking-wider hover:bg-[#e5c158] px-8 h-12 shadow-lg"
                 >
                   <Link to="/cadastro">
-                    Acessar cardápio completo e pedir <ArrowRight className="ml-2 h-4 w-4" />
+                    {content.menu_cta} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
@@ -418,12 +425,12 @@ export default function Index() {
         <section id="galeria" className="page-shell py-20 lg:py-24">
           <div className="mx-auto max-w-7xl">
             <div className="mb-10 flex flex-col gap-3 text-center">
-              <p className="eyebrow mx-auto">Galeria</p>
+              <p className="eyebrow mx-auto">{content.gallery_eyebrow}</p>
               <h2 className="font-display text-4xl leading-tight sm:text-5xl">
-                Fotos e vídeos do local
+                {content.gallery_title}
               </h2>
               <p className="mx-auto max-w-2xl text-base text-muted-foreground">
-                Um pouco do que espera por você: o lago, a pesca e os pratos da nossa cozinha.
+                {content.gallery_text}
               </p>
             </div>
 
@@ -502,20 +509,19 @@ export default function Index() {
           <div className="overflow-hidden rounded-[2rem] bg-primary text-white shadow-2xl">
             <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
               <img
-                src={LOCAL_PHOTOS.dish}
+                src={siteImage('promo_image', LOCAL_PHOTOS.dish)}
                 alt="Porção especial do dia"
                 className="h-full min-h-[300px] w-full object-cover"
               />
               <div className="p-8 sm:p-12 lg:p-16">
                 <p className="text-xs font-bold uppercase tracking-[0.23em] text-amber-300">
-                  Promoção do dia
+                  {content.promo_eyebrow}
                 </p>
                 <h2 className="mt-4 text-3xl sm:text-4xl">
-                  {promotions[0]?.title ?? 'Um convite para voltar'}
+                  {promotions[0]?.title ?? content.promo_fallback_title}
                 </h2>
                 <p className="mt-5 max-w-xl text-base leading-7 text-white/68">
-                  {promotions[0]?.text ??
-                    'Acompanhe nossas novidades e condições especiais para pesca e restaurante.'}
+                  {promotions[0]?.text ?? content.promo_fallback_text}
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Button variant="secondary" asChild>
@@ -558,8 +564,8 @@ export default function Index() {
         <section id="localizacao" className="bg-secondary/45 py-20">
           <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[0.72fr_1.28fr] lg:px-8">
             <div>
-              <p className="eyebrow mb-4">Venha nos visitar</p>
-              <h2 className="font-display text-4xl">Seu próximo dia tranquilo começa aqui.</h2>
+              <p className="eyebrow mb-4">{content.location_eyebrow}</p>
+              <h2 className="font-display text-4xl">{content.location_title}</h2>
               <div className="mt-7 space-y-4 text-sm text-muted-foreground">
                 <a
                   href={`tel:${phoneDigits}`}
@@ -570,7 +576,7 @@ export default function Index() {
                   </span>
                   <span>
                     <small className="block">Contato e reservas</small>
-                    <strong className="text-base text-foreground">19 991689268</strong>
+                    <strong className="text-base text-foreground">{content.contact_phone}</strong>
                   </span>
                 </a>
                 <div className="flex items-center gap-3">
@@ -579,9 +585,7 @@ export default function Index() {
                   </span>
                   <span>
                     <small className="block">Funcionamento</small>
-                    <strong className="text-base text-foreground">
-                      Terça a domingo, 07h às 20h
-                    </strong>
+                    <strong className="text-base text-foreground">{content.opening_hours}</strong>
                   </span>
                 </div>
               </div>

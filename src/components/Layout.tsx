@@ -12,6 +12,7 @@ import {
   Megaphone,
   ReceiptText,
   UsersRound,
+  FileText,
   X,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -63,6 +64,12 @@ const navItems: NavItem[] = [
     label: 'Galeria do site',
     href: '/app/galeria',
     icon: Images,
+    roles: ['gestor', 'atendimento'],
+  },
+  {
+    label: 'Conteúdo do site',
+    href: '/app/conteudo',
+    icon: FileText,
     roles: ['gestor', 'atendimento'],
   },
   { label: 'Fotos & avaliação', href: '/app/experiencia', icon: Images, roles: ['cliente'] },

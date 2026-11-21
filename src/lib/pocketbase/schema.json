@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-21T13:33:09.889Z",
+  "generatedAt": "2026-11-21T14:13:08.882Z",
   "collections": [
     {
       "name": "users",
@@ -1263,6 +1263,262 @@
         }
       ],
       "indexes": ["CREATE INDEX idx_gallery_media_order ON gallery_media (order)"]
+    },
+    {
+      "name": "site_content",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "hero_badge",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "hero_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "hero_subtitle",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "hero_cta_primary",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "hero_cta_secondary",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cover_image",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "strip_1_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "strip_1_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "strip_2_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "strip_2_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "strip_3_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "strip_3_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "about_eyebrow",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "about_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "about_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "about_quote",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "about_image_1",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "about_image_2",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "feature_1_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "feature_1_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "feature_2_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "feature_2_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "menu_tagline",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "menu_description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "menu_cta",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gallery_eyebrow",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gallery_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gallery_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gallery_background",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "promo_eyebrow",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "promo_fallback_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "promo_fallback_text",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "promo_image",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "location_eyebrow",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "location_title",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contact_phone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "opening_hours",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "map_query",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
     }
   ]
 }

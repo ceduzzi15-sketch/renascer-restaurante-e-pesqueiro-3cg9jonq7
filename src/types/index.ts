@@ -167,6 +167,47 @@ export interface FinancialEntry extends BaseRecord {
   registered_by?: string
 }
 
+export interface SiteContent extends BaseRecord {
+  hero_badge: string
+  hero_title: string
+  hero_subtitle: string
+  hero_cta_primary: string
+  hero_cta_secondary: string
+  cover_image?: string
+  strip_1_title: string
+  strip_1_text: string
+  strip_2_title: string
+  strip_2_text: string
+  strip_3_title: string
+  strip_3_text: string
+  about_eyebrow: string
+  about_title: string
+  about_text: string
+  about_quote: string
+  about_image_1?: string
+  about_image_2?: string
+  feature_1_title: string
+  feature_1_text: string
+  feature_2_title: string
+  feature_2_text: string
+  menu_tagline: string
+  menu_description: string
+  menu_cta: string
+  gallery_eyebrow: string
+  gallery_title: string
+  gallery_text: string
+  gallery_background?: string
+  promo_eyebrow: string
+  promo_fallback_title: string
+  promo_fallback_text: string
+  promo_image?: string
+  location_eyebrow: string
+  location_title: string
+  contact_phone: string
+  opening_hours: string
+  map_query: string
+}
+
 export interface GalleryMedia extends BaseRecord {
   type: 'foto' | 'video'
   file: string

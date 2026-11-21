@@ -14,6 +14,7 @@ import FinancePage from '@/pages/FinancePage'
 import ExperiencePage from '@/pages/ExperiencePage'
 import PromotionsPage from '@/pages/PromotionsPage'
 import GalleryAdminPage from '@/pages/GalleryAdminPage'
+import SiteContentPage from '@/pages/SiteContentPage'
 import NotFound from '@/pages/NotFound'
 import type { UserRole } from '@/types'
 
@@ -137,6 +138,14 @@ function AppRoutes() {
           element={
             <RoleRoute roles={['gestor']}>
               <PromotionsPage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="conteudo"
+          element={
+            <RoleRoute roles={['gestor', 'atendimento']}>
+              <SiteContentPage />
             </RoleRoute>
           }
         />
