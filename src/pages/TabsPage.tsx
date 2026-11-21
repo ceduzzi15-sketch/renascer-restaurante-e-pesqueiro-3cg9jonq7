@@ -54,6 +54,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBusinessSettings } from '@/hooks/use-business-settings'
+import { useRequiredFields } from '@/hooks/use-required-fields'
 import {
   createRecord,
   findCustomerByCpf,
@@ -87,6 +88,8 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
   const { user } = useAuth()
   const { settings } = useBusinessSettings()
   const { toast } = useToast()
+  const { required: requiredFields } = useRequiredFields()
+  const [loadingCreating, setLoadingCreating] = useState(false)
   const [tabs, setTabs] = useState<CustomerTab[]>([])
   const [items, setItems] = useState<TabItem[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
@@ -137,9 +140,22 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
   const openTab = async (event: FormEvent) => {
     event.preventDefault()
     if (!user) return
+    const missing: string[] = []
+    if (requiredFields.name && !form.name.trim()) missing.push('nome')
+    if (requiredFields.phone && !form.phone.trim()) missing.push('telefone')
+    if (requiredFields.cpf && form.cpf.replace(/\D/g, '').length !== 11) missing.push('CPF')
+    if (missing.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Campos obrigatórios',
+        description: `Preencha: ${missing.join(', ')}.`,
+      })
+      return
+    }
+    setLoadingCreating(true)
     try {
       let customer = await findCustomerByCpf(form.cpf)
-      let customerUser = customer?.user || ''
+      let customerUser = customer?.user || user.id
       if (!customer) {
         const matchingUser = await findUserByCpf(form.cpf)
         customerUser = matchingUser?.id || ''
@@ -179,6 +195,8 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
         title: 'Não foi possível abrir a comanda',
         description: error instanceof Error ? error.message : 'Confira os dados.',
       })
+    } finally {
+      setLoadingCreating(false)
     }
   }
 
@@ -314,6 +332,17 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
 
   const currentItems = selected ? tabItems(selected.id) : []
   const canManage = user?.role !== 'cliente'
+  const hasOpenTab = tabs.some((tab) => tab.customer_user === user?.id && tab.status === 'aberta')
+  const openDialogForSelf = () => {
+    setForm((current) => ({
+      ...current,
+      name: user?.name ?? '',
+      phone: user?.phone ?? '',
+      cpf: user?.cpf ?? '',
+      email: user?.email ?? '',
+    }))
+    setOpenDialog(true)
+  }
 
   return (
     <div className="page-shell space-y-6">
@@ -340,6 +369,11 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
         {canManage && !paymentMode && (
           <Button onClick={() => setOpenDialog(true)}>
             <UserPlus className="mr-2 h-4 w-4" /> Abrir comanda
+          </Button>
+        )}
+        {!canManage && !paymentMode && (
+          <Button onClick={openDialogForSelf} disabled={hasOpenTab}>
+            <UserPlus className="mr-2 h-4 w-4" /> Abrir minha comanda
           </Button>
         )}
       </header>
@@ -434,7 +468,7 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
                   id="tab-name"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
+                  required={requiredFields.name}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -444,7 +478,7 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
                     id="tab-phone"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: normalizePhone(e.target.value) })}
-                    required
+                    required={requiredFields.phone}
                   />
                 </div>
                 <div className="space-y-2">
@@ -453,8 +487,8 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
                     id="tab-cpf"
                     value={form.cpf}
                     onChange={(e) => setForm({ ...form, cpf: normalizeCpf(e.target.value) })}
-                    required
-                    minLength={14}
+                    required={requiredFields.cpf}
+                    minLength={requiredFields.cpf ? 14 : undefined}
                   />
                 </div>
               </div>
@@ -472,12 +506,13 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
               <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Abrir comanda</Button>
+              <Button type="submit" disabled={loadingCreating}>
+                {loadingCreating ? 'Abrindo...' : 'Abrir comanda'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-
       <Sheet open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
           <SheetHeader>

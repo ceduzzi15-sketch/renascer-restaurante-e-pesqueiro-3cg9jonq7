@@ -1,5 +1,5 @@
 import type { BaseRecord } from '@/types'
-import { listRecords, updateRecord } from '@/services/api'
+import { createRecord, listRecords, updateRecord } from '@/services/api'
 
 export type RequiredFieldKey = 'name' | 'phone' | 'cpf' | 'email'
 
@@ -16,6 +16,12 @@ export const REQUIRED_FIELD_LABELS: Record<RequiredFieldKey, string> = {
 
 export async function getRequiredFieldsConfig() {
   return listRecords<RequiredFieldsConfig>('required_fields_config', { perPage: 1 })
+}
+
+export async function createRequiredFieldsConfig(
+  required_fields: Record<RequiredFieldKey, boolean>,
+) {
+  return createRecord<RequiredFieldsConfig>('required_fields_config', { required_fields })
 }
 
 export async function updateRequiredFieldsConfig(

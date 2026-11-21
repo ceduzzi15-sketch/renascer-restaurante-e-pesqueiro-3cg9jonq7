@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { LOCAL_PHOTOS } from '@/lib/assets'
 import BrandMark from '@/components/BrandMark'
 import { useBusinessSettings } from '@/hooks/use-business-settings'
+import { useRequiredFields } from '@/hooks/use-required-fields'
 import { normalizeCpf, normalizePhone } from '@/services/api'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const isRegister = mode === 'register'
   const { login, register } = useAuth()
   const { settings } = useBusinessSettings()
+  const { required: requiredFields } = useRequiredFields()
   const { toast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -28,6 +30,21 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    if (isRegister) {
+      const missing: string[] = []
+      if (requiredFields.name && !form.name.trim()) missing.push('nome')
+      if (requiredFields.email && !form.email.trim()) missing.push('e-mail')
+      if (requiredFields.phone && !form.phone.trim()) missing.push('telefone')
+      if (requiredFields.cpf && form.cpf.replace(/\D/g, '').length !== 11) missing.push('CPF')
+      if (missing.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Campos obrigatórios',
+          description: `Preencha: ${missing.join(', ')}.`,
+        })
+        return
+      }
+    }
     setLoading(true)
     try {
       const user = isRegister ? await register(form) : await login(form.email, form.password)
@@ -116,7 +133,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     onChange={(e) => update('name', e.target.value)}
                     className="h-11 pl-10"
                     placeholder="Como devemos chamar você?"
-                    required
+                    required={requiredFields.name}
                   />
                 </div>
               </div>
@@ -132,7 +149,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                   onChange={(e) => update('email', e.target.value)}
                   className="h-11 pl-10"
                   placeholder="voce@email.com"
-                  required
+                  required={requiredFields.email || !isRegister}
                 />
               </div>
             </div>
@@ -148,7 +165,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                       onChange={(e) => update('phone', normalizePhone(e.target.value))}
                       className="h-11 pl-10"
                       placeholder="(19) 99999-9999"
-                      required
+                      required={requiredFields.phone}
                     />
                   </div>
                 </div>
@@ -160,8 +177,8 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     onChange={(e) => update('cpf', normalizeCpf(e.target.value))}
                     className="h-11"
                     placeholder="000.000.000-00"
-                    required
-                    minLength={14}
+                    required={requiredFields.cpf}
+                    minLength={requiredFields.cpf ? 14 : undefined}
                   />
                 </div>
               </div>

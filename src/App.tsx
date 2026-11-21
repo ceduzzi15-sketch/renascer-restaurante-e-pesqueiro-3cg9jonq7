@@ -15,12 +15,14 @@ import ExperiencePage from '@/pages/ExperiencePage'
 import PromotionsPage from '@/pages/PromotionsPage'
 import GalleryAdminPage from '@/pages/GalleryAdminPage'
 import SiteContentPage from '@/pages/SiteContentPage'
+import RequiredFieldsPage from '@/pages/RequiredFieldsPage'
+import CustomerAreaPage from '@/pages/CustomerAreaPage'
 import NotFound from '@/pages/NotFound'
 import type { UserRole } from '@/types'
 
 function homeForRole(role?: UserRole) {
   if (role === 'atendimento') return '/app/comandas'
-  if (role === 'cliente') return '/app/cardapio'
+  if (role === 'cliente') return '/app/cliente'
   return '/app'
 }
 
@@ -118,10 +120,26 @@ function AppRoutes() {
           }
         />
         <Route
+          path="cliente"
+          element={
+            <RoleRoute roles={['cliente']}>
+              <CustomerAreaPage />
+            </RoleRoute>
+          }
+        />
+        <Route
           path="experiencia"
           element={
             <RoleRoute roles={['cliente']}>
               <ExperiencePage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="campos-obrigatorios"
+          element={
+            <RoleRoute roles={['gestor']}>
+              <RequiredFieldsPage />
             </RoleRoute>
           }
         />
