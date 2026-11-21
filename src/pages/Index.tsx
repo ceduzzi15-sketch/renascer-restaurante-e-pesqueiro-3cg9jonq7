@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -22,21 +22,16 @@ import { Badge } from '@/components/ui/badge'
 import { useBusinessSettings } from '@/hooks/use-business-settings'
 import { useSiteContent } from '@/hooks/use-site-content'
 import { getActivePromotions, getFileUrl, getMenuCategories, getPublicMenu } from '@/services/api'
+import { fetchMenuFolders, groupCategoriesByFolder, itemsOfCategory } from '@/services/menu'
 import { getGalleryMedia } from '@/services/gallery'
 import type { GalleryMedia } from '@/types'
 import { LOCAL_PHOTOS } from '@/lib/assets'
 import BrandMark from '@/components/BrandMark'
 import LogoEmblem from '@/components/LogoEmblem'
 import { isHighlightItem, sortHighlightsFirst } from '@/lib/highlights'
-import type { MenuCategoryRecord, MenuItem, Promotion } from '@/types'
+import type { MenuCategoryRecord, MenuFolder, MenuItem, Promotion } from '@/types'
 import { cn } from '@/lib/utils'
 import { Sparkles } from 'lucide-react'
-
-const fallbackCategoryLabels: Record<string, string> = {
-  comida: 'Pratos',
-  porcao: 'Porções',
-  bebida: 'Bebidas',
-}
 
 type SiteImageField =
   | 'cover_image'
@@ -50,24 +45,30 @@ export default function Index() {
   const { content, record: contentRecord } = useSiteContent()
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<MenuCategoryRecord[]>([])
+  const [folders, setFolders] = useState<MenuFolder[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [gallery, setGallery] = useState<GalleryMedia[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [selectedCatFilter, setSelectedCatFilter] = useState<string>('all')
   const [lightbox, setLightbox] = useState<GalleryMedia | null>(null)
 
   useEffect(() => {
-    void Promise.all([getPublicMenu(), getMenuCategories(), getActivePromotions()])
-      .then(([menuData, catData, promotionData]) => {
+    void Promise.all([getPublicMenu(), getMenuCategories(), getActivePromotions(), fetchMenuFolders()])
+      .then(([menuData, catData, promotionData, folderData]) => {
         setMenu(menuData)
         setCategories(catData)
         setPromotions(promotionData)
+        setFolders(folderData)
       })
       .catch(() => undefined)
     void getGalleryMedia()
       .then(setGallery)
       .catch(() => undefined)
   }, [])
+
+  const menuSections = useMemo(
+    () => groupCategoriesByFolder(categories, folders),
+    [categories, folders],
+  )
 
   const phoneDigits = content.contact_phone.replace(/\D/g, '')
   const whatsappDigits = phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`
@@ -76,10 +77,6 @@ export default function Index() {
     contentRecord && contentRecord[field]
       ? getFileUrl(contentRecord, contentRecord[field] as string)
       : fallback
-  const siteBackground = (field: SiteImageField) =>
-    contentRecord && contentRecord[field]
-      ? getFileUrl(contentRecord, contentRecord[field] as string)
-      : null
 
   return (
     <div className="min-h-screen bg-background">
@@ -151,26 +148,28 @@ export default function Index() {
       </header>
 
       <main>
-        <section className="relative min-h-[760px] overflow-hidden bg-primary pt-20 sm:min-h-[820px]">
+        {/* Capa limpa: a foto aparece sem nenhum overlay, fade ou gradiente por cima */}
+        <section className="pt-20">
           <img
             src={siteImage('cover_image', LOCAL_PHOTOS.lake)}
             alt="Vista ampla do lago do pesqueiro"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="h-[62vh] min-h-[380px] w-full object-cover sm:h-[74vh]"
           />
-          <div className="lake-overlay absolute inset-0" />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent" />
-          <div className="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-4 py-20 sm:px-6 lg:px-8">
-            <div className="max-w-3xl animate-rise text-white">
+        </section>
+
+        <section className="bg-primary text-white">
+          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+            <div className="max-w-3xl">
               <Badge className="mb-6 border border-amber-200/20 bg-amber-300/15 px-4 py-2 text-amber-200 hover:bg-amber-300/15">
                 <Waves className="mr-2 h-4 w-4" /> {content.hero_badge}
               </Badge>
-              <h1 className="text-5xl leading-[1.02] sm:text-6xl lg:text-7xl xl:text-[5.25rem]">
+              <h1 className="text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
                 {content.hero_title}
               </h1>
-              <p className="mt-7 max-w-xl text-lg leading-relaxed text-white/72 sm:text-xl">
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/85 sm:text-xl">
                 {content.hero_subtitle}
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" variant="secondary" asChild className="h-12 px-6">
                   <a href="#cardapio">
                     {content.hero_cta_primary} <ChevronRight className="ml-2 h-4 w-4" />
@@ -180,7 +179,7 @@ export default function Index() {
                   size="lg"
                   variant="outline"
                   asChild
-                  className="h-12 border-white/25 bg-white/5 px-6 text-white hover:bg-white/12 hover:text-white"
+                  className="h-12 border-white/25 bg-transparent px-6 text-white hover:bg-white/10 hover:text-white"
                 >
                   <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noreferrer">
                     <MessageCircle className="mr-2 h-4 w-4" /> {content.hero_cta_secondary}
@@ -189,8 +188,8 @@ export default function Index() {
               </div>
             </div>
           </div>
-          <div className="absolute bottom-0 left-0 right-0">
-            <div className="mx-auto grid max-w-7xl gap-px border-t border-white/10 bg-white/10 sm:grid-cols-3">
+          <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+            <div className="grid gap-3 sm:grid-cols-3">
               {[
                 [Clock3, content.strip_1_title, content.strip_1_text],
                 [MapPin, content.strip_2_title, content.strip_2_text],
@@ -198,14 +197,14 @@ export default function Index() {
               ].map(([Icon, title, text]) => (
                 <div
                   key={String(title)}
-                  className="flex items-center gap-4 bg-primary/68 px-5 py-5 text-white backdrop-blur-lg sm:px-7"
+                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-5"
                 >
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/10">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/10">
                     <Icon className="h-5 w-5 text-amber-300" />
                   </span>
                   <span>
                     <strong className="block text-sm">{String(title)}</strong>
-                    <small className="text-white/55">{String(text)}</small>
+                    <small className="text-white/70">{String(text)}</small>
                   </span>
                 </div>
               ))}
@@ -284,12 +283,6 @@ export default function Index() {
                 <h2 className="mt-4 font-cinzel text-3xl font-extrabold uppercase tracking-wider text-[#e5c158] sm:text-5xl drop-shadow-md">
                   RENASCER
                 </h2>
-                <a
-                  href="#galeria"
-                  className="mt-2 text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-[#e5c158]"
-                >
-                  → Ver fotos e vídeos do local
-                </a>
                 <p className="font-condensed text-lg uppercase tracking-[0.25em] text-white/80">
                   {content.menu_tagline}
                 </p>
@@ -297,127 +290,83 @@ export default function Index() {
                 <p className="text-sm sm:text-base text-white/70 max-w-xl mx-auto">
                   {content.menu_description}
                 </p>
+              </div>
 
-                {/* Filtros rápidos por categoria caso existam */}
-                {categories.length > 0 && (
-                  <div className="mt-6 flex flex-wrap justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCatFilter('all')}
-                      className={cn(
-                        'rounded-full px-4 py-1.5 text-xs font-condensed uppercase tracking-wider transition border',
-                        selectedCatFilter === 'all'
-                          ? 'border-[#d4af37] bg-[#d4af37] text-[#0d271e] font-bold'
-                          : 'border-white/20 bg-black/20 text-white/80 hover:border-[#d4af37]/60',
-                      )}
-                    >
-                      Todos
-                    </button>
-                    {categories.map((c) => {
-                      const artUrl = c.art_image ? getFileUrl(c, c.art_image, '100x100') : ''
-                      return (
-                        <button
-                          key={c.category_id}
-                          type="button"
-                          onClick={() => setSelectedCatFilter(c.category_id)}
-                          className={cn(
-                            'flex items-center gap-2 rounded-full py-1 pl-1 pr-4 text-xs font-condensed uppercase tracking-wider transition border',
-                            selectedCatFilter === c.category_id
-                              ? 'border-[#d4af37] bg-[#d4af37] text-[#0d271e] font-bold'
-                              : 'border-white/20 bg-black/20 text-white/80 hover:border-[#d4af37]/60',
-                          )}
-                        >
-                          {artUrl ? (
+              {/* Cardápio público agrupado pelas pastas/setores (sem valores) */}
+              {menuSections.map((section) => (
+                <div key={section.folder?.id ?? 'geral'} className="mt-10">
+                  <div className="mb-5 flex flex-col items-center gap-2 text-center">
+                    <h3 className="font-cinzel text-2xl font-bold uppercase tracking-wide text-[#e5c158] sm:text-3xl">
+                      {section.folder?.name ?? 'Cardápio'}
+                    </h3>
+                    <div className="h-[2px] w-16 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+                  </div>
+                  {section.categories.map((category) => {
+                    const catItems = sortHighlightsFirst(itemsOfCategory(menu, category.id))
+                    if (catItems.length === 0) return null
+                    return (
+                      <div key={category.id} className="mt-8">
+                        <h4 className="mb-4 flex items-center justify-center gap-3 font-condensed text-base font-bold uppercase tracking-[0.2em] text-white">
+                          {category.art_image ? (
                             <img
-                              src={artUrl}
+                              src={getFileUrl(category, category.art_image, '100x100')}
                               alt=""
-                              className={cn(
-                                'h-6 w-6 rounded-full object-cover',
-                                selectedCatFilter === c.category_id ? 'grayscale-0' : 'grayscale',
-                              )}
+                              className="h-8 w-8 rounded-full object-cover"
                             />
                           ) : null}
-                          {c.name}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Itens do cardápio público (sem preços) — destaques primeiro */}
-              <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {sortHighlightsFirst(
-                  menu.filter((item) =>
-                    selectedCatFilter === 'all' ? true : item.categoria_id === selectedCatFilter,
-                  ),
-                ).map((item, index) => {
-                  const fallback =
-                    item.category === 'bebida'
-                      ? LOCAL_PHOTOS.lake
-                      : index % 2
-                        ? LOCAL_PHOTOS.fish
-                        : LOCAL_PHOTOS.dish
-                  const displayCategory =
-                    item.category_name || fallbackCategoryLabels[item.category] || 'Restaurante'
-                  const highlight = isHighlightItem(item)
-
-                  return (
-                    <article
-                      key={item.id}
-                      className={cn(
-                        'group relative flex flex-col justify-between rounded-xl border border-[#d4af37]/30 bg-[#0d271e]/85 p-4 transition duration-300 hover:border-[#d4af37] hover:bg-[#12362a]',
-                        highlight && 'border-[#d4af37] bg-[#12362a]/90',
-                      )}
-                    >
-                      {highlight && (
-                        <Badge className="absolute -top-2.5 right-3 z-10 border border-[#d4af37] bg-[#d4af37] font-condensed text-[10px] font-bold uppercase tracking-widest text-[#0d271e]">
-                          <Sparkles className="mr-1 h-3 w-3" /> Destaque
-                        </Badge>
-                      )}
-                      <div>
-                        <div className="flex items-center justify-between gap-2 border-b border-[#d4af37]/20 pb-2 mb-2">
-                          <span className="font-condensed text-xs uppercase tracking-widest text-[#e5c158]">
-                            {displayCategory}
-                          </span>
-                          {item.subcategoria && (
-                            <span className="text-[11px] text-white/50 italic">
-                              {item.subcategoria}
-                            </span>
-                          )}
+                          {category.name}
+                        </h4>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {catItems.map((item) => {
+                            const highlight = isHighlightItem(item)
+                            return (
+                              <article
+                                key={item.id}
+                                className={cn(
+                                  'group relative flex flex-col justify-between rounded-xl border border-[#d4af37]/30 bg-[#0d271e]/85 p-4 transition duration-300 hover:border-[#d4af37] hover:bg-[#12362a]',
+                                  highlight && 'border-[#d4af37] bg-[#12362a]/90',
+                                )}
+                              >
+                                {highlight && (
+                                  <Badge className="absolute -top-2.5 right-3 z-10 border border-[#d4af37] bg-[#d4af37] font-condensed text-[10px] font-bold uppercase tracking-widest text-[#0d271e]">
+                                    <Sparkles className="mr-1 h-3 w-3" /> Destaque
+                                  </Badge>
+                                )}
+                                <div>
+                                  {item.subcategoria && (
+                                    <p className="mb-2 text-[11px] text-white/50 italic">
+                                      {item.subcategoria}
+                                    </p>
+                                  )}
+                                  <h3 className="font-condensed text-xl font-bold uppercase tracking-wide text-white transition group-hover:text-[#e5c158]">
+                                    {item.name}
+                                  </h3>
+                                  {(item.observacao || item.description) && (
+                                    <p className="mt-1.5 text-xs leading-relaxed text-white/70">
+                                      {item.observacao || item.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="mt-3 pt-2 text-right">
+                                  <span className="text-[11px] font-condensed uppercase tracking-wider text-white/40">
+                                    Disponível no pesqueiro
+                                  </span>
+                                </div>
+                              </article>
+                            )
+                          })}
                         </div>
-                        <h3 className="font-condensed text-xl font-bold uppercase tracking-wide text-white group-hover:text-[#e5c158] transition">
-                          {item.name}
-                        </h3>
-                        {(item.observacao || item.description) && (
-                          <p className="mt-1.5 text-xs leading-relaxed text-white/70">
-                            {item.observacao || item.description}
-                          </p>
-                        )}
                       </div>
-                      <div className="mt-3 pt-2 text-right">
-                        <span className="text-[11px] font-condensed uppercase tracking-wider text-white/40">
-                          Disponível no pesqueiro
-                        </span>
-                      </div>
-                    </article>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              ))}
 
               <div className="mt-12 text-center border-t border-[#d4af37]/30 pt-8">
-                <Button
-                  asChild
-                  className="bg-[#d4af37] text-[#0d271e] font-condensed text-base font-bold uppercase tracking-wider hover:bg-[#e5c158] px-8 h-12 shadow-lg"
-                >
-                  <Link to="/cadastro">
-                    {content.menu_cta} <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                <p className="font-condensed text-sm uppercase tracking-[0.2em] text-white/60">
+                  {content.menu_cta}
+                </p>
               </div>
-
-              {/* Faixa decorativa xadrez inspirada no rodapé do cartaz */}
-              <div className="mt-8 h-3 w-full poster-ribbon rounded-sm opacity-85" />
             </div>
           </div>
         </section>
