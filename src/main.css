@@ -110,7 +110,7 @@
     );
   }
 
-  /* Identidade do Cartaz Renascere: Fundo verde-escuro com textura sutil e detalhes dourados */
+  /* Identidade do Cartaz Renascer: Fundo verde-escuro com textura sutil e detalhes dourados */
   .poster-container {
     background: radial-gradient(circle at 50% 20%, #1e4537 0%, #14352a 50%, #0d271e 100%);
     box-shadow: 0 25px 60px -15px rgba(5, 20, 15, 0.7);

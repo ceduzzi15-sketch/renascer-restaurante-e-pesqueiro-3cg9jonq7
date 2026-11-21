@@ -164,6 +164,14 @@ export interface FinancialEntry extends BaseRecord {
   registered_by?: string
 }
 
+export interface GalleryMedia extends BaseRecord {
+  type: 'foto' | 'video'
+  file: string
+  caption?: string
+  order?: number
+  featured?: boolean
+}
+
 export interface Review extends BaseRecord {
   user: string
   customer_name: string

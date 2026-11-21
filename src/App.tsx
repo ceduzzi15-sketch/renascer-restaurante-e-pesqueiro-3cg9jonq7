@@ -13,6 +13,7 @@ import CustomersPage from '@/pages/CustomersPage'
 import FinancePage from '@/pages/FinancePage'
 import ExperiencePage from '@/pages/ExperiencePage'
 import PromotionsPage from '@/pages/PromotionsPage'
+import GalleryAdminPage from '@/pages/GalleryAdminPage'
 import NotFound from '@/pages/NotFound'
 import type { UserRole } from '@/types'
 
@@ -120,6 +121,14 @@ function AppRoutes() {
           element={
             <RoleRoute roles={['cliente']}>
               <ExperiencePage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="galeria"
+          element={
+            <RoleRoute roles={['gestor', 'atendimento']}>
+              <GalleryAdminPage />
             </RoleRoute>
           }
         />

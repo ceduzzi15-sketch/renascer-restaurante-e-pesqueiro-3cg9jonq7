@@ -20,7 +20,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useBusinessSettings } from '@/hooks/use-business-settings'
-import { getActivePromotions, getMenuCategories, getPublicMenu } from '@/services/api'
+import { getActivePromotions, getFileUrl, getMenuCategories, getPublicMenu } from '@/services/api'
+import { getGalleryMedia } from '@/services/gallery'
+import type { GalleryMedia } from '@/types'
 import { LOCAL_PHOTOS } from '@/lib/assets'
 import BrandMark from '@/components/BrandMark'
 import type { MenuCategoryRecord, MenuItem, Promotion } from '@/types'
@@ -37,8 +39,10 @@ export default function Index() {
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<MenuCategoryRecord[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [gallery, setGallery] = useState<GalleryMedia[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
   const [selectedCatFilter, setSelectedCatFilter] = useState<string>('all')
+  const [lightbox, setLightbox] = useState<GalleryMedia | null>(null)
 
   useEffect(() => {
     void Promise.all([getPublicMenu(), getMenuCategories(), getActivePromotions()])
@@ -47,6 +51,9 @@ export default function Index() {
         setCategories(catData)
         setPromotions(promotionData)
       })
+      .catch(() => undefined)
+    void getGalleryMedia()
+      .then(setGallery)
       .catch(() => undefined)
   }, [])
 
@@ -256,15 +263,21 @@ export default function Index() {
 
         <section id="cardapio" className="py-20 lg:py-28 bg-[#0b241b]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {/* Visual do Cartaz com Verde-escuro, moldura dourada e RENASCERE */}
+            {/* Visual do Cartaz com Verde-escuro, moldura dourada e RENASCER */}
             <div className="poster-container poster-double-border rounded-3xl p-6 sm:p-10 text-white relative overflow-hidden">
               <div className="mx-auto max-w-3xl text-center">
                 <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d4af37]/40 bg-[#0c241b]/80 px-4 py-1.5 text-xs font-semibold tracking-widest text-[#e5c158] uppercase">
                   ✦ Tradição & Sabor ✦
                 </div>
                 <h2 className="mt-4 font-cinzel text-3xl font-extrabold uppercase tracking-wider text-[#e5c158] sm:text-5xl drop-shadow-md">
-                  RENASCERE
+                  RENASCER
                 </h2>
+                <a
+                  href="#galeria"
+                  className="mt-2 text-sm font-semibold uppercase tracking-widest text-white/70 hover:text-[#e5c158]"
+                >
+                  → Ver fotos e vídeos do local
+                </a>
                 <p className="font-condensed text-lg uppercase tracking-[0.25em] text-white/80">
                   Restaurante e Pesqueiro
                 </p>
@@ -373,6 +386,89 @@ export default function Index() {
               {/* Faixa decorativa xadrez inspirada no rodapé do cartaz */}
               <div className="mt-8 h-3 w-full poster-ribbon rounded-sm opacity-85" />
             </div>
+          </div>
+        </section>
+
+        <section id="galeria" className="page-shell py-20 lg:py-24">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 flex flex-col gap-3 text-center">
+              <p className="eyebrow mx-auto">Galeria</p>
+              <h2 className="font-display text-4xl leading-tight sm:text-5xl">
+                Fotos e vídeos do local
+              </h2>
+              <p className="mx-auto max-w-2xl text-base text-muted-foreground">
+                Um pouco do que espera por você: o lago, a pesca e os pratos da nossa cozinha.
+              </p>
+            </div>
+
+            {gallery.length === 0 ? (
+              <div className="grid gap-4 sm:grid-cols-3">
+                <figure className="group relative h-72 overflow-hidden rounded-[2rem] shadow-lg sm:h-80">
+                  <img
+                    src={LOCAL_PHOTOS.dish}
+                    alt="Porção de peixe crocante servida no restaurante"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-sm font-medium text-white">
+                    Sabor que sai da cozinha para a mesa
+                  </figcaption>
+                </figure>
+                <figure className="group relative h-72 overflow-hidden rounded-[2rem] shadow-lg sm:h-80">
+                  <img
+                    src={LOCAL_PHOTOS.fish}
+                    alt="Peixe pescado no lago do pesqueiro"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-sm font-medium text-white">
+                    Pesca garantida no nosso lago
+                  </figcaption>
+                </figure>
+                <figure className="group relative h-72 overflow-hidden rounded-[2rem] shadow-lg sm:h-80">
+                  <img
+                    src={LOCAL_PHOTOS.lake}
+                    alt="Vista ampla do lago do pesqueiro"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-sm font-medium text-white">
+                    Natureza e tranquilidade à beira do lago
+                  </figcaption>
+                </figure>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {gallery.map((item) => {
+                  const url = getFileUrl(item, item.file)
+                  return (
+                    <figure
+                      key={item.id}
+                      className="group relative h-72 cursor-pointer overflow-hidden rounded-[2rem] bg-muted shadow-lg sm:h-80"
+                      onClick={() => item.type === 'foto' && setLightbox(item)}
+                    >
+                      {item.type === 'foto' ? (
+                        <img
+                          src={url}
+                          alt={item.caption || 'Foto do pesqueiro'}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <video
+                          src={url}
+                          className="h-full w-full object-cover"
+                          controls
+                          playsInline
+                          preload="metadata"
+                        />
+                      )}
+                      {item.caption && item.type === 'foto' && (
+                        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-sm font-medium text-white">
+                          {item.caption}
+                        </figcaption>
+                      )}
+                    </figure>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </section>
 

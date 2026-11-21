@@ -209,7 +209,7 @@ export default function MenuPage() {
               ✦ Cartaz Oficial ✦
             </div>
             <h1 className="mt-2 font-cinzel text-3xl sm:text-4xl font-black uppercase tracking-wider text-[#e5c158]">
-              RENASCERE
+              RENASCER
             </h1>
             <p className="font-condensed text-base uppercase tracking-[0.22em] text-white/80">
               Restaurante e Pesqueiro
@@ -241,7 +241,7 @@ export default function MenuPage() {
           )}
         </div>
 
-        {/* Faixa decorativa xadrez estilo cartaz Renascere */}
+        {/* Faixa decorativa xadrez estilo cartaz Renascer */}
         <div className="mt-6 h-2.5 w-full poster-ribbon rounded-sm opacity-80" />
       </section>
 

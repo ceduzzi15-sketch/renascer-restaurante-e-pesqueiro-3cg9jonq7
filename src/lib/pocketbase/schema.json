@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T21:27:30.094Z",
+  "generatedAt": "2026-11-21T12:48:13.163Z",
   "collections": [
     {
       "name": "users",
@@ -1185,6 +1185,65 @@
         "CREATE UNIQUE INDEX idx_menu_categories_cat_id ON menu_categories (category_id)",
         "CREATE INDEX idx_menu_categories_order ON menu_categories (order)"
       ]
+    },
+    {
+      "name": "gallery_media",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["foto", "video"]
+        },
+        {
+          "name": "file",
+          "type": "file",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "caption",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "featured",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_gallery_media_order ON gallery_media (order)"]
     }
   ]
 }

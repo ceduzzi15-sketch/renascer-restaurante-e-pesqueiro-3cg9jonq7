@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -23,6 +24,8 @@ import { useBusinessSettings } from '@/hooks/use-business-settings'
 import BrandMark from '@/components/BrandMark'
 import { cn } from '@/lib/utils'
 import type { UserRole } from '@/types'
+
+const GalleryAdminPage = lazy(() => import('@/pages/GalleryAdminPage'))
 
 interface NavItem {
   label: string
@@ -56,6 +59,12 @@ const navItems: NavItem[] = [
   { label: 'Clientes', href: '/app/clientes', icon: UsersRound, roles: ['gestor'] },
   { label: 'Financeiro', href: '/app/financeiro', icon: BadgeDollarSign, roles: ['gestor'] },
   { label: 'Promoções', href: '/app/promocoes', icon: Megaphone, roles: ['gestor'] },
+  {
+    label: 'Galeria do site',
+    href: '/app/galeria',
+    icon: Images,
+    roles: ['gestor', 'atendimento'],
+  },
   { label: 'Fotos & avaliação', href: '/app/experiencia', icon: Images, roles: ['cliente'] },
 ]
 
