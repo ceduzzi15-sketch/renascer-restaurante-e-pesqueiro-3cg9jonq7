@@ -69,7 +69,7 @@ import LoadingState from '@/components/LoadingState'
 import EmptyState from '@/components/EmptyState'
 import type { Customer, CustomerTab, MenuItem, TabItem } from '@/types'
 
-const blankTab = { name: '', phone: '', cpf: '', table: '' }
+const blankTab = { name: '', phone: '', cpf: '', email: '', notes: '', table: '' }
 const statusLabels: Record<CustomerTab['status'], string> = {
   aberta: 'Aberta',
   aguardando_pagamento: 'Aguardando PIX',

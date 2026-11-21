@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-21T15:33:09.949Z",
+  "generatedAt": "2026-11-21T19:45:33.483Z",
   "collections": [
     {
       "name": "users",
@@ -582,9 +582,9 @@
       "apiRules": {
         "list": "",
         "view": "",
-        "create": "@request.auth.role = 'gestor'",
-        "update": "@request.auth.role = 'gestor'",
-        "delete": "@request.auth.role = 'gestor'"
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'"
       },
       "fields": [
         {
@@ -598,7 +598,7 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["pesca", "locacao"]
+          "selectValues": ["pesca", "locacao", "estacionamento"]
         },
         {
           "name": "description",
@@ -1198,6 +1198,12 @@
           "type": "file",
           "required": false,
           "system": false
+        },
+        {
+          "name": "folder",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -1500,6 +1506,80 @@
         {
           "name": "map_query",
           "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "menu_folders",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "update": "@request.auth.role = 'gestor' || @request.auth.role = 'atendimento'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_menu_folders_order ON menu_folders (\"order\")"]
+    },
+    {
+      "name": "required_fields_config",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.role = 'gestor'",
+        "update": "@request.auth.role = 'gestor'",
+        "delete": "@request.auth.role = 'gestor'"
+      },
+      "fields": [
+        {
+          "name": "required_fields",
+          "type": "json",
           "required": false,
           "system": false
         },

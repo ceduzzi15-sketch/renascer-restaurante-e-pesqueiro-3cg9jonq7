@@ -1,138 +1,168 @@
-import pb from '@/lib/pocketbase/client'
-import type {
-  BaseRecord,
-  BusinessSettings,
-  Customer,
-  FinancialEntry,
-  MenuCategoryRecord,
-  MenuItem,
-  Promotion,
-  ServiceRate,
-} from '@/types'
+import pbClient from '@/lib/pocketbase/client'
+import type { BaseRecord } from '@/types'
 
-interface ListOptions {
-  sort?: string
+export const pb = pbClient
+
+function onlyDigits(value: string): string {
+  return (value || '').replace(/\D/g, '')
+}
+
+/** Formata como (DD) NNNNN-NNNN a partir dos dígitos digitados. */
+export function normalizePhone(value: string): string {
+  const digits = onlyDigits(value).slice(0, 11)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+/** Formata como 000.000.000-00 a partir dos dígitos digitados. */
+export function normalizeCpf(value: string): string {
+  const digits = onlyDigits(value).slice(0, 11)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+}
+
+/** ISO da meia-noite local de hoje (início do dia no fuso do dispositivo). */
+export function startOfTodayIso(): string {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+}
+
+export interface ListOptions {
   filter?: string
+  sort?: string
   expand?: string
+  page?: number
+  perPage?: number
 }
 
 export async function listRecords<T extends BaseRecord>(
   collection: string,
   options: ListOptions = {},
-) {
-  const records = await pb.collection(collection).getFullList({
-    sort: options.sort,
-    filter: options.filter,
-    expand: options.expand,
-  })
-  return records as unknown as T[]
+): Promise<T[]> {
+  const perPage = options.perPage ?? 200
+  const records: T[] = []
+  let page = options.page ?? 1
+  // paginação defensiva: algumas listas podem passar de 200 registros
+  for (let guard = 0; guard < 20; guard++) {
+    const result = await pb.collection(collection).getList<T>(page, perPage, {
+      filter: options.filter,
+      sort: options.sort,
+      expand: options.expand,
+    })
+    records.push(...result.items)
+    if (result.items.length < perPage) break
+    page += 1
+  }
+  return records
 }
 
 export async function createRecord<T extends BaseRecord>(
   collection: string,
   data: Record<string, unknown> | FormData,
-) {
-  const record = await pb.collection(collection).create(data)
-  return record as unknown as T
+): Promise<T> {
+  return pb.collection(collection).create<T>(data)
 }
 
 export async function updateRecord<T extends BaseRecord>(
   collection: string,
   id: string,
   data: Record<string, unknown> | FormData,
-) {
-  const record = await pb.collection(collection).update(id, data)
-  return record as unknown as T
+): Promise<T> {
+  return pb.collection(collection).update<T>(id, data)
 }
 
-export async function deleteRecord(collection: string, id: string) {
+export async function deleteRecord(collection: string, id: string): Promise<void> {
   await pb.collection(collection).delete(id)
 }
 
+export function getFileUrl(
+  record: { id: string; collectionId?: string; collectionName?: string },
+  filename: string,
+  thumb?: string,
+): string {
+  return pb.files.getURL(record, filename, { thumb })
+}
+
+export function formatCurrency(value?: number | null): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value ?? 0)
+}
+
+export function formatDate(value?: string | null, withTime = false): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+  })
+}
+
 export async function getBusinessSettings() {
-  const records = await listRecords<BusinessSettings>('settings', { filter: 'key = "main"' })
-  return records[0] ?? null
+  const rows = await listRecords<import('@/types').BusinessSettings>('settings', {
+    sort: '-created',
+    perPage: 1,
+  })
+  return rows[0] ?? null
 }
 
 export async function getMenuCategories() {
-  return listRecords<MenuCategoryRecord>('menu_categories', { sort: 'order,name' })
+  return listRecords<import('@/types').MenuCategoryRecord>('menu_categories', {
+    sort: 'order,name',
+  })
 }
 
 export async function getPublicMenu() {
-  return listRecords<MenuItem>('menu_items', {
+  return listRecords<import('@/types').MenuItem>('menu_items', {
     filter: 'active = true',
     sort: 'categoria_ordem,ordem,category,name',
   })
 }
 
 export async function getActivePromotions() {
-  return listRecords<Promotion>('promotions', { filter: 'active = true', sort: '-promotion_date' })
+  return listRecords<import('@/types').Promotion>('promotions', {
+    filter: 'active = true',
+    sort: '-promotion_date',
+    perPage: 3,
+  })
 }
 
 export async function getServiceRates() {
-  return listRecords<ServiceRate>('service_rates', { filter: 'active = true', sort: 'type,price' })
+  return listRecords<import('@/types').ServiceRate>('service_rates', { sort: 'type,price' })
 }
 
 export async function findCustomerByCpf(cpf: string) {
-  const customers = await listRecords<Customer>('customers')
-  return (
-    customers.find((customer) => customer.cpf.replace(/\D/g, '') === cpf.replace(/\D/g, '')) ?? null
-  )
+  const rows = await listRecords<import('@/types').Customer>('customers', {
+    filter: `cpf = "${cpf}"`,
+    perPage: 1,
+  })
+  return rows[0] ?? null
 }
 
 export async function findUserByCpf(cpf: string) {
-  const users = await listRecords<import('@/types').AuthUser>('users')
-  return users.find((user) => user.cpf.replace(/\D/g, '') === cpf.replace(/\D/g, '')) ?? null
+  const rows = await listRecords<import('@/types').AuthUser>('users', {
+    filter: `cpf = "${cpf}"`,
+    perPage: 1,
+  })
+  return rows[0] ?? null
 }
 
-export async function recordFinancialEntry(data: Omit<FinancialEntry, keyof BaseRecord>) {
-  return createRecord<FinancialEntry>(
-    'financial_entries',
-    data as unknown as Record<string, unknown>,
-  )
-}
-
-export function getFileUrl(record: BaseRecord, filename?: string, thumb?: string) {
-  if (!filename) return ''
-  return pb.files.getURL(record as never, filename, thumb ? { thumb } : undefined)
-}
-
-export function formatCurrency(value: number | string | undefined) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-    Number(value) || 0,
-  )
-}
-
-export function formatDate(value?: string, includeTime = false) {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return new Intl.DateTimeFormat(
-    'pt-BR',
-    includeTime
-      ? { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }
-      : { day: '2-digit', month: 'short', year: 'numeric' },
-  ).format(date)
-}
-
-export function startOfTodayIso() {
-  const date = new Date()
-  date.setHours(0, 0, 0, 0)
-  return date.toISOString()
-}
-
-export function normalizeCpf(value: string) {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 11)
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
-}
-
-export function normalizePhone(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+export async function recordFinancialEntry(input: {
+  type: 'entrada' | 'saida'
+  category: import('@/types').FinancialEntry['category']
+  description: string
+  amount: number
+  source_type: 'manual' | 'comanda' | 'atividade'
+  source_id?: string
+  registered_by?: string
+}) {
+  return createRecord<import('@/types').FinancialEntry>('financial_entries', {
+    ...input,
+    entry_date: new Date().toISOString(),
+  })
 }
