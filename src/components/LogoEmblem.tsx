@@ -1,5 +1,5 @@
 /**
- * Logo real do RENASCER, extraída da foto enviada pelo usuário
+ * Logo real do Renascer, extraída da foto enviada pelo usuário
  * (emblema com árvores, lago/pesca e o texto "Renascer — Restaurante e Pesqueiro"
  * no terço superior da foto, sobre o salão desfocado).
  *
@@ -31,7 +31,7 @@ export default function LogoEmblem({ className }: { className?: string }) {
       viewBox={`${rect.x} ${rect.y} ${rect.width} ${rect.height}`}
       className={cn('shrink-0', className)}
       role="img"
-      aria-label="Logo do RENASCER — Restaurante e Pesqueiro"
+      aria-label="Logo do Renascer"
     >
       <defs>
         <clipPath id={clipId}>
