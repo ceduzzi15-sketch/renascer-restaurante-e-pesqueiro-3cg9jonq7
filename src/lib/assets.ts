@@ -5,7 +5,7 @@ export const LOCAL_PHOTOS = {
 } as const
 
 export const DEFAULT_BUSINESS = {
-  business_name: 'Recanto do Pescador',
+  business_name: 'Renascer Restaurante e Pesqueiro',
   tagline: 'Boa pesca, comida de verdade e momentos à beira do lago.',
   contact_phone: '19 991689268',
   pix_key: '19 991689268',
