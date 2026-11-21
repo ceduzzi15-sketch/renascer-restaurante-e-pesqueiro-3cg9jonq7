@@ -73,9 +73,10 @@ export default function CsvImportModal({ open, onOpenChange, onSuccess }: CsvImp
       })
 
       setStats(result)
+      const skippedInfo = result.skipped > 0 ? `, ${result.skipped} ignorados` : ''
       toast({
         title: 'Importação concluída com sucesso!',
-        description: `${result.added} registros adicionados, ${result.updated} atualizados.`,
+        description: `${result.added} registros adicionados, ${result.updated} atualizados${skippedInfo}.`,
       })
       onSuccess()
     } catch (err) {
@@ -116,8 +117,8 @@ export default function CsvImportModal({ open, onOpenChange, onSuccess }: CsvImp
             <div>
               <DialogTitle className="text-xl">Importar Cardápio via CSV</DialogTitle>
               <DialogDescription>
-                Carregue arquivos de Categorias ou Itens. O sistema detecta separador, decimais e
-                faz upsert automático sem duplicar dados.
+                Carregue arquivos de Categorias, Itens ou Destaques. O sistema detecta separador,
+                decimais e faz upsert automático sem duplicar dados.
               </DialogDescription>
             </div>
           </div>
@@ -137,7 +138,7 @@ export default function CsvImportModal({ open, onOpenChange, onSuccess }: CsvImp
                 Suporta CSV com delimitador vírgula (,) ou ponto e vírgula (;)
               </p>
               <Badge variant="outline" className="mt-3 text-xs bg-white text-muted-foreground">
-                Arquivos de Itens ou Categorias
+                Arquivos de Itens, Categorias ou Destaques
               </Badge>
             </div>
           )}
@@ -179,7 +180,11 @@ export default function CsvImportModal({ open, onOpenChange, onSuccess }: CsvImp
                   </p>
                 </div>
                 <Badge className="bg-primary text-white">
-                  {parsed.type === 'categories' ? 'Categorias' : 'Itens do Cardápio'}
+                  {parsed.type === 'categories'
+                    ? 'Categorias'
+                    : parsed.type === 'highlights'
+                      ? 'Destaques'
+                      : 'Itens do Cardápio'}
                 </Badge>
               </div>
 

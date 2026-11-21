@@ -1,0 +1,25 @@
+﻿categoria_id;posicao;item;preco;preco_formatado
+almoco;1;Strogonoff de Frango;25,00;R$ 25,00
+almoco;2;Moela;25,00;R$ 25,00
+almoco;3;Dobradinha;25,00;R$ 25,00
+porcoes;1;Amendoim;4,00;R$ 4,00
+porcoes;2;Anéis de Cebola;40,00;R$ 40,00
+porcoes;3;Batata Rústica;35,00;R$ 35,00
+drinks;1;Caipirinha (Cachaça);18,00;R$ 18,00
+drinks;2;Caipiroska (Smirnoff);22,00;R$ 22,00
+drinks;3;Caipiroska (Absolut);32,00;R$ 32,00
+destilados;1;Vinho (garrafa);65,00;R$ 65,00
+destilados;2;Campari;15,00;R$ 15,00
+destilados;3;Whisky 12 Anos;23,00;R$ 23,00
+cervejas-600;1;Heineken;18,00;R$ 18,00
+cervejas-600;2;Original;17,00;R$ 17,00
+cervejas-600;3;Império;14,00;R$ 14,00
+long-neck;1;Budweiser;12,00;R$ 12,00
+long-neck;2;Budweiser 0.0;12,00;R$ 12,00
+long-neck;3;Heineken;12,00;R$ 12,00
+latas;1;Budweiser;10,00;R$ 10,00
+latas;2;Budweiser Zero;10,00;R$ 10,00
+latas;3;Heineken;10,00;R$ 10,00
+sem-alcool;1;Água sem Gás;4,00;R$ 4,00
+sem-alcool;2;Água com Gás;5,00;R$ 5,00
+sem-alcool;3;Água de Coco;6,00;R$ 6,00

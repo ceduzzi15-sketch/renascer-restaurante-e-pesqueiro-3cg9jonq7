@@ -1,0 +1,17 @@
+﻿ordem;categoria_id;categoria;formato;largura;altura;arquivo
+1;almoco;Almoço Executivo;svg;1080;1350;categoria-01-almoco.svg
+2;porcoes;Porções;svg;1080;1350;categoria-02-porcoes.svg
+3;drinks;Drinks;svg;1080;1350;categoria-03-drinks.svg
+4;destilados;Destilados;svg;1080;1350;categoria-04-destilados.svg
+5;cervejas-600;Cervejas 600 ml;svg;1080;1350;categoria-05-cervejas-600.svg
+6;long-neck;Cervejas Long Neck;svg;1080;1350;categoria-06-long-neck.svg
+7;latas;Cervejas Lata;svg;1080;1350;categoria-07-latas.svg
+8;sem-alcool;Bebidas sem Álcool;svg;1080;1350;categoria-08-sem-alcool.svg
+1;almoco;Almoço Executivo;png;1080;1350;categoria-01-almoco.png
+2;porcoes;Porções;png;1080;1350;categoria-02-porcoes.png
+3;drinks;Drinks;png;1080;1350;categoria-03-drinks.png
+4;destilados;Destilados;png;1080;1350;categoria-04-destilados.png
+5;cervejas-600;Cervejas 600 ml;png;1080;1350;categoria-05-cervejas-600.png
+6;long-neck;Cervejas Long Neck;png;1080;1350;categoria-06-long-neck.png
+7;latas;Cervejas Lata;png;1080;1350;categoria-07-latas.png
+8;sem-alcool;Bebidas sem Álcool;png;1080;1350;categoria-08-sem-alcool.png

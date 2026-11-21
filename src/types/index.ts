@@ -40,6 +40,7 @@ export interface MenuCategoryRecord extends BaseRecord {
   item_count?: number
   art_svg?: string
   art_png?: string
+  art_image?: string
 }
 
 export interface MenuItem extends BaseRecord {
@@ -57,6 +58,8 @@ export interface MenuItem extends BaseRecord {
   ordem?: number
   categoria_ordem?: number
   preco_formatado?: string
+  destaque?: boolean
+  destaque_posicao?: number
 }
 
 export interface Customer extends BaseRecord {

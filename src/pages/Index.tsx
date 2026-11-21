@@ -25,8 +25,11 @@ import { getGalleryMedia } from '@/services/gallery'
 import type { GalleryMedia } from '@/types'
 import { LOCAL_PHOTOS } from '@/lib/assets'
 import BrandMark from '@/components/BrandMark'
+import LogoEmblem from '@/components/LogoEmblem'
+import { isHighlightItem, sortHighlightsFirst } from '@/lib/highlights'
 import type { MenuCategoryRecord, MenuItem, Promotion } from '@/types'
 import { cn } from '@/lib/utils'
+import { Sparkles } from 'lucide-react'
 
 const fallbackCategoryLabels: Record<string, string> = {
   comida: 'Pratos',
@@ -266,6 +269,7 @@ export default function Index() {
             {/* Visual do Cartaz com Verde-escuro, moldura dourada e RENASCER */}
             <div className="poster-container poster-double-border rounded-3xl p-6 sm:p-10 text-white relative overflow-hidden">
               <div className="mx-auto max-w-3xl text-center">
+                <LogoEmblem className="mx-auto mb-5 h-28 w-28 drop-shadow-lg" />
                 <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d4af37]/40 bg-[#0c241b]/80 px-4 py-1.5 text-xs font-semibold tracking-widest text-[#e5c158] uppercase">
                   ✦ Tradição & Sabor ✦
                 </div>
@@ -302,74 +306,96 @@ export default function Index() {
                     >
                       Todos
                     </button>
-                    {categories.map((c) => (
-                      <button
-                        key={c.category_id}
-                        type="button"
-                        onClick={() => setSelectedCatFilter(c.category_id)}
-                        className={cn(
-                          'rounded-full px-4 py-1.5 text-xs font-condensed uppercase tracking-wider transition border',
-                          selectedCatFilter === c.category_id
-                            ? 'border-[#d4af37] bg-[#d4af37] text-[#0d271e] font-bold'
-                            : 'border-white/20 bg-black/20 text-white/80 hover:border-[#d4af37]/60',
-                        )}
-                      >
-                        {c.name}
-                      </button>
-                    ))}
+                    {categories.map((c) => {
+                      const artUrl = c.art_image ? getFileUrl(c, c.art_image, '100x100') : ''
+                      return (
+                        <button
+                          key={c.category_id}
+                          type="button"
+                          onClick={() => setSelectedCatFilter(c.category_id)}
+                          className={cn(
+                            'flex items-center gap-2 rounded-full py-1 pl-1 pr-4 text-xs font-condensed uppercase tracking-wider transition border',
+                            selectedCatFilter === c.category_id
+                              ? 'border-[#d4af37] bg-[#d4af37] text-[#0d271e] font-bold'
+                              : 'border-white/20 bg-black/20 text-white/80 hover:border-[#d4af37]/60',
+                          )}
+                        >
+                          {artUrl ? (
+                            <img
+                              src={artUrl}
+                              alt=""
+                              className={cn(
+                                'h-6 w-6 rounded-full object-cover',
+                                selectedCatFilter === c.category_id ? 'grayscale-0' : 'grayscale',
+                              )}
+                            />
+                          ) : null}
+                          {c.name}
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
               </div>
 
-              {/* Itens do cardápio público (sem preços) */}
+              {/* Itens do cardápio público (sem preços) — destaques primeiro */}
               <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {menu
-                  .filter((item) =>
+                {sortHighlightsFirst(
+                  menu.filter((item) =>
                     selectedCatFilter === 'all' ? true : item.categoria_id === selectedCatFilter,
-                  )
-                  .map((item, index) => {
-                    const fallback =
-                      item.category === 'bebida'
-                        ? LOCAL_PHOTOS.lake
-                        : index % 2
-                          ? LOCAL_PHOTOS.fish
-                          : LOCAL_PHOTOS.dish
-                    const displayCategory =
-                      item.category_name || fallbackCategoryLabels[item.category] || 'Restaurante'
+                  ),
+                ).map((item, index) => {
+                  const fallback =
+                    item.category === 'bebida'
+                      ? LOCAL_PHOTOS.lake
+                      : index % 2
+                        ? LOCAL_PHOTOS.fish
+                        : LOCAL_PHOTOS.dish
+                  const displayCategory =
+                    item.category_name || fallbackCategoryLabels[item.category] || 'Restaurante'
+                  const highlight = isHighlightItem(item)
 
-                    return (
-                      <article
-                        key={item.id}
-                        className="group flex flex-col justify-between rounded-xl border border-[#d4af37]/30 bg-[#0d271e]/85 p-4 transition duration-300 hover:border-[#d4af37] hover:bg-[#12362a]"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-2 border-b border-[#d4af37]/20 pb-2 mb-2">
-                            <span className="font-condensed text-xs uppercase tracking-widest text-[#e5c158]">
-                              {displayCategory}
+                  return (
+                    <article
+                      key={item.id}
+                      className={cn(
+                        'group relative flex flex-col justify-between rounded-xl border border-[#d4af37]/30 bg-[#0d271e]/85 p-4 transition duration-300 hover:border-[#d4af37] hover:bg-[#12362a]',
+                        highlight && 'border-[#d4af37] bg-[#12362a]/90',
+                      )}
+                    >
+                      {highlight && (
+                        <Badge className="absolute -top-2.5 right-3 z-10 border border-[#d4af37] bg-[#d4af37] font-condensed text-[10px] font-bold uppercase tracking-widest text-[#0d271e]">
+                          <Sparkles className="mr-1 h-3 w-3" /> Destaque
+                        </Badge>
+                      )}
+                      <div>
+                        <div className="flex items-center justify-between gap-2 border-b border-[#d4af37]/20 pb-2 mb-2">
+                          <span className="font-condensed text-xs uppercase tracking-widest text-[#e5c158]">
+                            {displayCategory}
+                          </span>
+                          {item.subcategoria && (
+                            <span className="text-[11px] text-white/50 italic">
+                              {item.subcategoria}
                             </span>
-                            {item.subcategoria && (
-                              <span className="text-[11px] text-white/50 italic">
-                                {item.subcategoria}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="font-condensed text-xl font-bold uppercase tracking-wide text-white group-hover:text-[#e5c158] transition">
-                            {item.name}
-                          </h3>
-                          {(item.observacao || item.description) && (
-                            <p className="mt-1.5 text-xs leading-relaxed text-white/70">
-                              {item.observacao || item.description}
-                            </p>
                           )}
                         </div>
-                        <div className="mt-3 pt-2 text-right">
-                          <span className="text-[11px] font-condensed uppercase tracking-wider text-white/40">
-                            Disponível no pesqueiro
-                          </span>
-                        </div>
-                      </article>
-                    )
-                  })}
+                        <h3 className="font-condensed text-xl font-bold uppercase tracking-wide text-white group-hover:text-[#e5c158] transition">
+                          {item.name}
+                        </h3>
+                        {(item.observacao || item.description) && (
+                          <p className="mt-1.5 text-xs leading-relaxed text-white/70">
+                            {item.observacao || item.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="mt-3 pt-2 text-right">
+                        <span className="text-[11px] font-condensed uppercase tracking-wider text-white/40">
+                          Disponível no pesqueiro
+                        </span>
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
 
               <div className="mt-12 text-center border-t border-[#d4af37]/30 pt-8">

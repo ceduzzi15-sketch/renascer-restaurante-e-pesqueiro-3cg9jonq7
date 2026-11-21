@@ -57,6 +57,10 @@ import { LOCAL_PHOTOS } from '@/lib/assets'
 import EmptyState from '@/components/EmptyState'
 import LoadingState from '@/components/LoadingState'
 import CsvImportModal from '@/components/CsvImportModal'
+import CategoryArtDialog from '@/components/CategoryArtDialog'
+import LogoEmblem from '@/components/LogoEmblem'
+import { isHighlightItem, sortHighlightsFirst } from '@/lib/highlights'
+import { cn } from '@/lib/utils'
 import type { MenuCategory, MenuCategoryRecord, MenuItem } from '@/types'
 
 const labels: Record<MenuCategory, string> = {
@@ -91,6 +95,8 @@ export default function MenuPage() {
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState<MenuItem | null>(null)
   const [deleting, setDeleting] = useState<MenuItem | null>(null)
+  const [artCategory, setArtCategory] = useState<MenuCategoryRecord | null>(null)
+  const [artDialogOpen, setArtDialogOpen] = useState(false)
   const [form, setForm] = useState(blankForm)
 
   const refresh = async () => {
@@ -110,23 +116,30 @@ export default function MenuPage() {
     void refresh()
   }, [])
 
+  const openArtDialog = (category: MenuCategoryRecord) => {
+    setArtCategory(category)
+    setArtDialogOpen(true)
+  }
+
   const visible = useMemo(
     () =>
-      items.filter((item) => {
-        const matchesCategory =
-          selectedCategoryTab === 'todos' ||
-          item.categoria_id === selectedCategoryTab ||
-          item.category === selectedCategoryTab
+      sortHighlightsFirst(
+        items.filter((item) => {
+          const matchesCategory =
+            selectedCategoryTab === 'todos' ||
+            item.categoria_id === selectedCategoryTab ||
+            item.category === selectedCategoryTab
 
-        const matchesSearch =
-          item.name.toLowerCase().includes(search.toLowerCase()) ||
-          (item.description && item.description.toLowerCase().includes(search.toLowerCase())) ||
-          (item.subcategoria && item.subcategoria.toLowerCase().includes(search.toLowerCase())) ||
-          (item.category_name && item.category_name.toLowerCase().includes(search.toLowerCase()))
+          const matchesSearch =
+            item.name.toLowerCase().includes(search.toLowerCase()) ||
+            (item.description && item.description.toLowerCase().includes(search.toLowerCase())) ||
+            (item.subcategoria && item.subcategoria.toLowerCase().includes(search.toLowerCase())) ||
+            (item.category_name && item.category_name.toLowerCase().includes(search.toLowerCase()))
 
-        const matchesRole = user?.role !== 'cliente' || item.active
-        return matchesCategory && matchesSearch && matchesRole
-      }),
+          const matchesRole = user?.role !== 'cliente' || item.active
+          return matchesCategory && matchesSearch && matchesRole
+        }),
+      ),
     [items, selectedCategoryTab, search, user?.role],
   )
 
@@ -205,6 +218,7 @@ export default function MenuPage() {
       <section className="poster-container poster-double-border rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
+            <LogoEmblem className="h-16 w-16 rounded-xl border border-[#d4af37]/40 shadow-lg mb-2" />
             <div className="inline-flex items-center gap-2 rounded-full border border-[#d4af37]/40 bg-[#0c241b]/80 px-3 py-1 text-xs font-semibold tracking-widest text-[#e5c158] uppercase">
               ✦ Cartaz Oficial ✦
             </div>
@@ -219,6 +233,37 @@ export default function MenuPage() {
                 ? 'Consulte os itens frescos de nossa cozinha e lance diretamente na sua comanda.'
                 : 'Gestão completa do cardápio: cadastre novos pratos ou importe tabelas via CSV com categorias e preços.'}
             </p>
+            {categories.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {categories.map((cat) => {
+                  const artUrl = cat.art_image ? getFileUrl(cat, cat.art_image, '200x200') : ''
+                  return (
+                    <button
+                      key={cat.category_id}
+                      type="button"
+                      onClick={() => openArtDialog(cat)}
+                      title={`Arte da categoria ${cat.name}`}
+                      className="group flex items-center gap-2 rounded-full border border-[#d4af37]/30 bg-[#0c241b]/80 py-1 pl-1 pr-3 transition hover:border-[#d4af37]"
+                    >
+                      {artUrl ? (
+                        <img
+                          src={artUrl}
+                          alt={`Arte da categoria ${cat.name}`}
+                          className="h-7 w-7 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-[#e5c158]">
+                          <ImagePlus className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                      <span className="font-condensed text-[11px] uppercase tracking-wider text-white/85">
+                        {cat.name}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {isRole('gestor', 'atendimento') && (
@@ -335,7 +380,11 @@ export default function MenuPage() {
             return (
               <article
                 key={item.id}
-                className="group flex flex-col justify-between overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md"
+                className={cn(
+                  'group flex flex-col justify-between overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md',
+                  isHighlightItem(item) &&
+                    'border-[#d4af37] shadow-[0_0_0_1px_rgba(212,175,55,0.45)]',
+                )}
               >
                 <div>
                   <div className="relative h-40 overflow-hidden bg-muted">
@@ -356,6 +405,11 @@ export default function MenuPage() {
                     {!item.active && (
                       <Badge variant="destructive" className="absolute right-3 top-3">
                         Indisponível
+                      </Badge>
+                    )}
+                    {isHighlightItem(item) && (
+                      <Badge className="absolute right-3 top-3 border border-[#d4af37] bg-[#d4af37] font-condensed text-[11px] font-bold uppercase tracking-wider text-[#0d271e]">
+                        <Sparkles className="mr-1 h-3 w-3" /> Destaque
                       </Badge>
                     )}
                   </div>
@@ -430,6 +484,14 @@ export default function MenuPage() {
 
       {/* Modal de Importação de CSV */}
       <CsvImportModal open={csvModalOpen} onOpenChange={setCsvModalOpen} onSuccess={refresh} />
+
+      {/* Modal de arte da categoria */}
+      <CategoryArtDialog
+        category={artCategory}
+        open={artDialogOpen}
+        onOpenChange={setArtDialogOpen}
+        onSaved={refresh}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">

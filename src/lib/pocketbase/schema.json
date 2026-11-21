@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-21T12:48:13.163Z",
+  "generatedAt": "2026-11-21T13:33:09.889Z",
   "collections": [
     {
       "name": "users",
@@ -261,13 +261,26 @@
           "type": "text",
           "required": false,
           "system": false
+        },
+        {
+          "name": "destaque",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "destaque_posicao",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE INDEX idx_menu_items_category ON menu_items (category)",
         "CREATE INDEX idx_menu_items_active ON menu_items (active)",
         "CREATE INDEX `idx_menu_items_categoria_id` ON `menu_items` (categoria_id)",
-        "CREATE INDEX `idx_menu_items_ordem` ON `menu_items` (ordem)"
+        "CREATE INDEX `idx_menu_items_ordem` ON `menu_items` (ordem)",
+        "CREATE INDEX `idx_menu_items_destaque` ON `menu_items` (destaque)"
       ]
     },
     {
@@ -1179,6 +1192,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "art_image",
+          "type": "file",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

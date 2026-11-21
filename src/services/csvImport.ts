@@ -2,7 +2,7 @@ import { createRecord, listRecords, updateRecord } from '@/services/api'
 import type { MenuCategory, MenuCategoryRecord, MenuItem } from '@/types'
 
 export interface ParsedCsvResult {
-  type: 'categories' | 'items'
+  type: 'categories' | 'items' | 'highlights'
   delimiter: ';' | ','
   rowCount: number
   headers: string[]
@@ -27,6 +27,13 @@ export interface ParsedCsvResult {
     preco_formatado: string
     categoria_ordem: number
     category: MenuCategory
+  }>
+  highlightsToApply?: Array<{
+    categoria_id: string
+    name: string
+    destaque_posicao: number
+    price: number
+    preco_formatado: string
   }>
 }
 
@@ -148,22 +155,33 @@ export function parseMenuCsv(content: string): ParsedCsvResult {
     h.toLowerCase().replace(/['"]/g, '').trim(),
   )
 
+  // Arquivo de DESTAQUES: categoria_id + posicao + item (marca itens existentes como destaque)
+  const isHighlightFile =
+    headers.includes('posicao') &&
+    headers.includes('item') &&
+    headers.includes('categoria_id') &&
+    !headers.includes('subtitulo')
+
   const isCategoryFile =
+    !isHighlightFile &&
     headers.includes('categoria_id') &&
     (headers.includes('arquivo_arte_svg') ||
       headers.includes('arquivo_arte_png') ||
       headers.includes('qtd_itens') ||
-      (headers.includes('subtitulo') && !headers.includes('item')))
+      (headers.includes('subtitulo') && !headers.includes('item')) ||
+      // Formato alternativo: uma linha por arte, com colunas de arquivo/formato
+      (headers.includes('arquivo') && headers.includes('formato') && !headers.includes('item')))
 
   const isItemFile =
-    headers.includes('item') ||
-    headers.includes('preco') ||
-    headers.includes('preco_centavos') ||
-    headers.includes('subcategoria')
+    !isHighlightFile &&
+    (headers.includes('item') ||
+      headers.includes('preco') ||
+      headers.includes('preco_centavos') ||
+      headers.includes('subcategoria'))
 
-  if (!isCategoryFile && !isItemFile) {
+  if (!isCategoryFile && !isItemFile && !isHighlightFile) {
     throw new Error(
-      'Formato de colunas não reconhecido. O CSV deve ser de Categorias (ordem, categoria_id, nome...) ou de Itens (ordem, categoria_id, item, preco...).',
+      'Formato de colunas não reconhecido. O CSV deve ser de Categorias (ordem, categoria_id, nome...), de Itens (ordem, categoria_id, item, preco...) ou de Destaques (categoria_id, posicao, item, preco...).',
     )
   }
 
@@ -176,6 +194,31 @@ export function parseMenuCsv(content: string): ParsedCsvResult {
       row[h] = values[idx] ?? ''
     })
     rawRows.push(row)
+  }
+
+  // Destaques: marca o item correspondente (categoria_id + nome) como destaque
+  if (isHighlightFile) {
+    const highlightsToApply = rawRows
+      .map((r) => {
+        const rawPrice = r.preco || ''
+        return {
+          categoria_id: (r.categoria_id || '').trim().toLowerCase(),
+          name: (r.item || '').trim(),
+          destaque_posicao: parseInt(r.posicao || '0', 10) || 0,
+          price: parseDecimalPrice(rawPrice),
+          preco_formatado: (r.preco_formatado || '').trim(),
+        }
+      })
+      .filter((h) => h.categoria_id && h.name && h.destaque_posicao > 0)
+
+    return {
+      type: 'highlights',
+      delimiter,
+      rowCount: highlightsToApply.length,
+      headers,
+      previewRows: rawRows.slice(0, 5),
+      highlightsToApply,
+    }
   }
 
   if (isCategoryFile) {
@@ -254,9 +297,10 @@ export function parseMenuCsv(content: string): ParsedCsvResult {
 export async function importMenuData(
   parsed: ParsedCsvResult,
   onProgress?: (current: number, total: number) => void,
-): Promise<{ added: number; updated: number }> {
+): Promise<{ added: number; updated: number; skipped: number }> {
   let added = 0
   let updated = 0
+  let skipped = 0
 
   if (parsed.type === 'categories') {
     const list = parsed.categoriesToUpsert || []
@@ -289,7 +333,44 @@ export async function importMenuData(
       onProgress?.(i + 1, list.length)
     }
 
-    return { added, updated }
+    return { added, updated, skipped }
+  }
+
+  // Destaques: marca itens existentes como destaque (upsert idempotente por
+  // categoria_id + nome normalizado; atualiza em vez de duplicar)
+  if (parsed.type === 'highlights') {
+    const list = parsed.highlightsToApply || []
+    const existingItems = await listRecords<MenuItem>('menu_items')
+
+    const byCategoryAndName = new Map<string, MenuItem>()
+    const byNameOnly = new Map<string, MenuItem>()
+    existingItems.forEach((item) => {
+      const normName = item.name.trim().toLowerCase()
+      const catId = (item.categoria_id || '').trim().toLowerCase()
+      if (catId) byCategoryAndName.set(`${catId}:::${normName}`, item)
+      byNameOnly.set(normName, item)
+    })
+
+    for (let i = 0; i < list.length; i++) {
+      const highlight = list[i]
+      const normName = highlight.name.trim().toLowerCase()
+      const existing =
+        byCategoryAndName.get(`${highlight.categoria_id}:::${normName}`) || byNameOnly.get(normName)
+
+      if (!existing) {
+        skipped++
+      } else {
+        await updateRecord('menu_items', existing.id, {
+          destaque: true,
+          destaque_posicao: highlight.destaque_posicao,
+        })
+        updated++
+      }
+
+      onProgress?.(i + 1, list.length)
+    }
+
+    return { added, updated, skipped }
   }
 
   // Itens
@@ -386,5 +467,5 @@ export async function importMenuData(
     onProgress?.(i + 1, list.length)
   }
 
-  return { added, updated }
+  return { added, updated, skipped }
 }
