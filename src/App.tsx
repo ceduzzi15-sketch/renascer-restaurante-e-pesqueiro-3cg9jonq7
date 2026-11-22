@@ -17,6 +17,7 @@ import GalleryAdminPage from '@/pages/GalleryAdminPage'
 import SiteContentPage from '@/pages/SiteContentPage'
 import RequiredFieldsPage from '@/pages/RequiredFieldsPage'
 import CustomerAreaPage from '@/pages/CustomerAreaPage'
+import CustomerMenuView from '@/pages/CustomerMenuView'
 import NotFound from '@/pages/NotFound'
 import type { UserRole } from '@/types'
 
@@ -90,9 +91,13 @@ function AppRoutes() {
         <Route
           path="cardapio"
           element={
-            <RoleRoute roles={['gestor', 'atendimento', 'cliente']}>
-              <MenuPage />
-            </RoleRoute>
+            user?.role === 'cliente' ? (
+              <CustomerMenuView />
+            ) : (
+              <RoleRoute roles={['gestor', 'atendimento']}>
+                <MenuPage />
+              </RoleRoute>
+            )
           }
         />
         <Route

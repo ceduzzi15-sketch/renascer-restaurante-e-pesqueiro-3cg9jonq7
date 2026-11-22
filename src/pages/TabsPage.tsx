@@ -68,6 +68,7 @@ import {
 } from '@/services/api'
 import LoadingState from '@/components/LoadingState'
 import EmptyState from '@/components/EmptyState'
+import PixQrCode from '@/components/PixQrCode'
 import type { Customer, CustomerTab, MenuItem, TabItem } from '@/types'
 
 const blankTab = { name: '', phone: '', cpf: '', email: '', notes: '', table: '' }
@@ -205,7 +206,7 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
     setAddingItem(true)
     try {
       const commission = (menuItem.price * (settings.commission_percent || 0)) / 100
-      const newItem = await createRecord<TabItem>('tab_items', {
+      await createRecord<TabItem>('tab_items', {
         tab: selected.id,
         menu_item: menuItem.id,
         item_name: menuItem.name,
@@ -217,11 +218,8 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
         ordered_by: user.id,
         commission_amount: commission,
       })
-      const newTotal = selected.total + menuItem.price
-      const updated = await updateRecord<CustomerTab>('tabs', selected.id, { total: newTotal })
-      setItems((current) => [newItem, ...current])
-      setTabs((current) => current.map((tab) => (tab.id === updated.id ? updated : tab)))
-      setSelected(updated)
+      const { total } = await recalcTabTotal(selected.id)
+      setSelected((current) => (current ? { ...current, total } : current))
       setNotes('')
       toast({ title: 'Pedido lançado', description: `${menuItem.name} foi adicionado à comanda.` })
     } catch (error) {
@@ -235,23 +233,35 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
     }
   }
 
+  /** Recalcula o total da comanda a partir dos itens (fonte da verdade). */
+  const recalcTabTotal = async (tabId: string, itemIdToIgnore?: string) => {
+    const fresh = await listRecords<TabItem>('tab_items', { filter: `tab = "${tabId}"` })
+    const total = fresh
+      .filter((item) => item.status !== 'cancelado' && item.id !== itemIdToIgnore)
+      .reduce((sum, item) => sum + Number(item.subtotal || 0), 0)
+    const updated = await updateRecord<CustomerTab>('tabs', tabId, { total })
+    setItems((current) => {
+      const map = new Map(current.map((row) => [row.id, row]))
+      for (const row of fresh) map.set(row.id, row)
+      return Array.from(map.values()).sort((a, b) => (a.created < b.created ? 1 : -1))
+    })
+    setTabs((current) => current.map((row) => (row.id === updated.id ? updated : row)))
+    setSelected((current) => (current?.id === updated.id ? updated : current))
+    return { total, items: fresh }
+  }
+
   const changeQuantity = async (item: TabItem, delta: number) => {
     if (!selected) return
     const quantity = Math.max(1, item.quantity + delta)
     const subtotal = quantity * item.unit_price
-    const difference = subtotal - item.subtotal
     try {
-      const updatedItem = await updateRecord<TabItem>('tab_items', item.id, {
+      await updateRecord<TabItem>('tab_items', item.id, {
         quantity,
         subtotal,
         commission_amount: (subtotal * (settings.commission_percent || 0)) / 100,
       })
-      const updatedTab = await updateRecord<CustomerTab>('tabs', selected.id, {
-        total: Math.max(0, selected.total + difference),
-      })
-      setItems((current) => current.map((row) => (row.id === updatedItem.id ? updatedItem : row)))
-      setTabs((current) => current.map((row) => (row.id === updatedTab.id ? updatedTab : row)))
-      setSelected(updatedTab)
+      await recalcTabTotal(selected.id)
+      toast({ title: 'Quantidade atualizada' })
     } catch {
       toast({ variant: 'destructive', title: 'Não foi possível alterar a quantidade' })
     }
@@ -260,13 +270,9 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
   const removeItem = async (item: TabItem) => {
     if (!selected) return
     try {
-      const updatedItem = await updateRecord<TabItem>('tab_items', item.id, { status: 'cancelado' })
-      const updatedTab = await updateRecord<CustomerTab>('tabs', selected.id, {
-        total: Math.max(0, selected.total - item.subtotal),
-      })
-      setItems((current) => current.map((row) => (row.id === updatedItem.id ? updatedItem : row)))
-      setTabs((current) => current.map((row) => (row.id === updatedTab.id ? updatedTab : row)))
-      setSelected(updatedTab)
+      await updateRecord<TabItem>('tab_items', item.id, { status: 'cancelado' })
+      await recalcTabTotal(selected.id)
+      toast({ title: 'Item removido da comanda' })
     } catch {
       toast({ variant: 'destructive', title: 'Não foi possível remover o item' })
     }
