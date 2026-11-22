@@ -50,6 +50,8 @@ export default function Index() {
   const [gallery, setGallery] = useState<GalleryMedia[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
   const [lightbox, setLightbox] = useState<GalleryMedia | null>(null)
+  /** Pastas do cardápio expandidas na landing — fechado por padrão. */
+  const [openMenuFolders, setOpenMenuFolders] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     void Promise.all([
@@ -74,6 +76,40 @@ export default function Index() {
     () => groupCategoriesByFolder(categories, folders),
     [categories, folders],
   )
+
+  /** Botões da seção cardápio: cada um abre o grupo correspondente. */
+  const menuFolderButtons = [
+    {
+      key: 'pesca-barco',
+      label: 'Pesca e Barco',
+      icon: Fish,
+      match: (name: string) => /pesca|barco|caiaque/i.test(name),
+    },
+    {
+      key: 'almoco-porcoes',
+      label: 'Almoço e Porções',
+      icon: UtensilsCrossed,
+      match: (name: string) => /almo|por|prato|cozinha/i.test(name),
+    },
+    {
+      key: 'bebidas',
+      label: 'Bebidas',
+      icon: MessageCircle,
+      match: (name: string) => /bebida|drink/i.test(name),
+    },
+  ]
+
+  const toggleMenuFolder = (key: string) => {
+    setOpenMenuFolders((current) => {
+      const next = new Set(current)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
 
   const phoneDigits = content.contact_phone.replace(/\D/g, '')
   const whatsappDigits = phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`
@@ -297,75 +333,102 @@ export default function Index() {
                 </p>
               </div>
 
-              {/* Cardápio público agrupado pelas pastas/setores (sem valores) */}
-              {menuSections.map((section) => (
-                <div key={section.folder?.id ?? 'geral'} className="mt-10">
-                  <div className="mb-5 flex flex-col items-center gap-2 text-center">
-                    <h3 className="font-cinzel text-2xl font-bold uppercase tracking-wide text-[#e5c158] sm:text-3xl">
-                      {section.folder?.name ?? 'Cardápio'}
-                    </h3>
-                    <div className="h-[2px] w-16 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
-                  </div>
-                  {section.categories.map((category) => {
-                    const catItems = sortHighlightsFirst(itemsOfCategory(menu, category.id))
-                    if (catItems.length === 0) return null
-                    return (
-                      <div key={category.id} className="mt-8">
-                        <h4 className="mb-4 flex items-center justify-center gap-3 font-condensed text-base font-bold uppercase tracking-[0.2em] text-white">
-                          {category.art_image ? (
-                            <img
-                              src={getFileUrl(category, category.art_image, '100x100')}
-                              alt=""
-                              className="h-8 w-8 rounded-full object-cover"
-                            />
-                          ) : null}
-                          {category.name}
-                        </h4>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          {catItems.map((item) => {
-                            const highlight = isHighlightItem(item)
-                            return (
-                              <article
-                                key={item.id}
-                                className={cn(
-                                  'group relative flex flex-col justify-between rounded-xl border border-[#d4af37]/30 bg-[#0d271e]/85 p-4 transition duration-300 hover:border-[#d4af37] hover:bg-[#12362a]',
-                                  highlight && 'border-[#d4af37] bg-[#12362a]/90',
-                                )}
-                              >
-                                {highlight && (
-                                  <Badge className="absolute -top-2.5 right-3 z-10 border border-[#d4af37] bg-[#d4af37] font-condensed text-[10px] font-bold uppercase tracking-widest text-[#0d271e]">
-                                    <Sparkles className="mr-1 h-3 w-3" /> Destaque
-                                  </Badge>
-                                )}
-                                <div>
-                                  {item.subcategoria && (
-                                    <p className="mb-2 text-[11px] text-white/50 italic">
-                                      {item.subcategoria}
-                                    </p>
+              {/* Botões do cardápio — fechado por padrão, cada botão abre seu grupo */}
+              <div className="mt-10 flex flex-wrap items-stretch justify-center gap-4">
+                {menuFolderButtons.map((button) => (
+                  <button
+                    key={button.key}
+                    onClick={() => toggleMenuFolder(button.key)}
+                    className={cn(
+                      'flex min-w-56 flex-1 max-w-xs items-center justify-center gap-2 rounded-2xl border px-6 py-5 text-base font-condensed font-bold uppercase tracking-widest transition',
+                      openMenuFolders.has(button.key)
+                        ? 'border-[#d4af37] bg-[#d4af37] text-[#0d271e]'
+                        : 'border-[#d4af37]/40 bg-[#0d271e]/85 text-[#e5c158] hover:border-[#d4af37] hover:bg-[#12362a]',
+                    )}
+                  >
+                    <button.icon className="h-5 w-5" />
+                    {button.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Cardápio público agrupado pelas pastas/setores (sem valores).
+                  Só aparece o grupo cujo botão está aberto. */}
+              {menuSections
+                .filter((section) => {
+                  const folderName = (section.folder?.name ?? 'Cardápio').toLowerCase()
+                  return menuFolderButtons.some(
+                    (button) => openMenuFolders.has(button.key) && button.match(folderName),
+                  )
+                })
+                .map((section) => (
+                  <div key={section.folder?.id ?? 'geral'} className="mt-10">
+                    <div className="mb-5 flex flex-col items-center gap-2 text-center">
+                      <h3 className="font-cinzel text-2xl font-bold uppercase tracking-wide text-[#e5c158] sm:text-3xl">
+                        {section.folder?.name ?? 'Cardápio'}
+                      </h3>
+                      <div className="h-[2px] w-16 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+                    </div>
+                    {section.categories.map((category) => {
+                      const catItems = sortHighlightsFirst(itemsOfCategory(menu, category.id))
+                      if (catItems.length === 0) return null
+                      return (
+                        <div key={category.id} className="mt-8">
+                          <h4 className="mb-4 flex items-center justify-center gap-3 font-condensed text-base font-bold uppercase tracking-[0.2em] text-white">
+                            {category.art_image ? (
+                              <img
+                                src={getFileUrl(category, category.art_image, '100x100')}
+                                alt=""
+                                className="h-8 w-8 rounded-full object-cover"
+                              />
+                            ) : null}
+                            {category.name}
+                          </h4>
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {catItems.map((item) => {
+                              const highlight = isHighlightItem(item)
+                              return (
+                                <article
+                                  key={item.id}
+                                  className={cn(
+                                    'group relative flex flex-col justify-between rounded-xl border border-[#d4af37]/30 bg-[#0d271e]/85 p-4 transition duration-300 hover:border-[#d4af37] hover:bg-[#12362a]',
+                                    highlight && 'border-[#d4af37] bg-[#12362a]/90',
                                   )}
-                                  <h3 className="font-condensed text-xl font-bold uppercase tracking-wide text-white transition group-hover:text-[#e5c158]">
-                                    {item.name}
-                                  </h3>
-                                  {(item.observacao || item.description) && (
-                                    <p className="mt-1.5 text-xs leading-relaxed text-white/70">
-                                      {item.observacao || item.description}
-                                    </p>
+                                >
+                                  {highlight && (
+                                    <Badge className="absolute -top-2.5 right-3 z-10 border border-[#d4af37] bg-[#d4af37] font-condensed text-[10px] font-bold uppercase tracking-widest text-[#0d271e]">
+                                      <Sparkles className="mr-1 h-3 w-3" /> Destaque
+                                    </Badge>
                                   )}
-                                </div>
-                                <div className="mt-3 pt-2 text-right">
-                                  <span className="text-[11px] font-condensed uppercase tracking-wider text-white/40">
-                                    Disponível no pesqueiro
-                                  </span>
-                                </div>
-                              </article>
-                            )
-                          })}
+                                  <div>
+                                    {item.subcategoria && (
+                                      <p className="mb-2 text-[11px] text-white/50 italic">
+                                        {item.subcategoria}
+                                      </p>
+                                    )}
+                                    <h3 className="font-condensed text-xl font-bold uppercase tracking-wide text-white transition group-hover:text-[#e5c158]">
+                                      {item.name}
+                                    </h3>
+                                    {(item.observacao || item.description) && (
+                                      <p className="mt-1.5 text-xs leading-relaxed text-white/70">
+                                        {item.observacao || item.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="mt-3 pt-2 text-right">
+                                    <span className="text-[11px] font-condensed uppercase tracking-wider text-white/40">
+                                      Disponível no pesqueiro
+                                    </span>
+                                  </div>
+                                </article>
+                              )
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ))}
+                      )
+                    })}
+                  </div>
+                ))}
 
               <div className="mt-12 text-center border-t border-[#d4af37]/30 pt-8">
                 <p className="font-condensed text-sm uppercase tracking-[0.2em] text-white/60">

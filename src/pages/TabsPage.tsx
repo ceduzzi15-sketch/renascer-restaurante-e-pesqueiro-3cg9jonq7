@@ -684,19 +684,15 @@ export default function TabsPage({ paymentMode = false }: { paymentMode?: boolea
             <p className="mt-2 text-3xl font-bold text-primary">
               {formatCurrency(checkout?.total)}
             </p>
-            <div className="mx-auto mt-5 flex max-w-sm items-center justify-between gap-3 rounded-xl border bg-white p-3">
-              <span className="truncate text-sm font-semibold">{settings.pix_key}</span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="shrink-0"
-                onClick={() => {
-                  void navigator.clipboard.writeText(settings.pix_key)
-                  toast({ title: 'Chave PIX copiada' })
-                }}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+            <div className="mt-5">
+              {checkout && (
+                <PixQrCode
+                  pixKey={settings.pix_key}
+                  merchantName={settings.business_name || 'Renascer'}
+                  amount={Number(checkout.total || 0)}
+                  reference={checkout.id.slice(0, 12)}
+                />
+              )}
             </div>
           </div>
           <AlertDialogFooter>

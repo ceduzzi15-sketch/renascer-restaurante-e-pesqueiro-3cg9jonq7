@@ -1,4 +1,7 @@
 import { ImagePlus, Pencil, Star, Trash2 } from 'lucide-react'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { isHighlightItem } from '@/lib/highlights'
 import { getFileUrl, formatCurrency } from '@/services/api'

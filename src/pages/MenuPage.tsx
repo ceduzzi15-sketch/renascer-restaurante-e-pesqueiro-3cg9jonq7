@@ -43,6 +43,7 @@ import MenuFolderEditor from '@/components/MenuFolderEditor'
 import MenuItemCard from '@/components/MenuItemCard'
 import LogoEmblem from '@/components/LogoEmblem'
 import { sortHighlightsFirst } from '@/lib/highlights'
+import { cn } from '@/lib/utils'
 import type { MenuCategory, MenuCategoryRecord, MenuFolder, MenuItem } from '@/types'
 
 const blankForm = {
@@ -75,6 +76,7 @@ export default function MenuPage() {
   const [deleting, setDeleting] = useState<MenuItem | null>(null)
   const [artCategory, setArtCategory] = useState<MenuCategoryRecord | null>(null)
   const [artDialogOpen, setArtDialogOpen] = useState(false)
+  const [focusPhotoField, setFocusPhotoField] = useState(false)
   const [form, setForm] = useState(blankForm)
 
   const refresh = async () => {
@@ -128,6 +130,13 @@ export default function MenuPage() {
     setForm(blankForm)
     setDialogOpen(true)
   }
+
+  /** Abre o diálogo de edição já com o seletor de foto em destaque. */
+  const openPhotoDialog = (item: MenuItem) => {
+    openEdit(item)
+    setFocusPhotoField(true)
+  }
+
   const openEdit = (item: MenuItem) => {
     setEditing(item)
     setForm({
@@ -167,6 +176,7 @@ export default function MenuPage() {
         description: 'O cardápio já está com as novas informações.',
       })
       setDialogOpen(false)
+      setFocusPhotoField(false)
       await refresh()
     } catch (error) {
       toast({
@@ -350,15 +360,13 @@ export default function MenuPage() {
                       </div>
 
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                        {categoryItems.map((item, index) => (
+                        {categoryItems.map((item) => (
                           <MenuItemCard
                             key={item.id}
                             item={item}
-                            index={index}
-                            category={category}
                             onEdit={openEdit}
                             onDelete={setDeleting}
-                            onCategoryArt={openArtDialog}
+                            onAddPhoto={openPhotoDialog}
                           />
                         ))}
                       </div>
@@ -473,8 +481,18 @@ export default function MenuPage() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div
+                className={cn(
+                  'space-y-2',
+                  focusPhotoField && 'rounded-2xl border-2 border-primary/50 p-3',
+                )}
+              >
                 <Label htmlFor="image">Foto</Label>
+                {focusPhotoField && (
+                  <p className="text-xs text-muted-foreground">
+                    Selecione a nova foto do item — ela substitui a anterior ao salvar.
+                  </p>
+                )}
                 <label
                   htmlFor="image"
                   className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground hover:bg-muted/40"

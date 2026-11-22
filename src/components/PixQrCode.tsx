@@ -9,7 +9,7 @@ interface PixQrCodeProps {
   /** Nome do recebedor (máx. 25 caracteres no BR Code). */
   merchantName: string
   /** Cidade do recebedor (máx. 15 caracteres no BR Code). */
-  merchantCity: string
+  merchantCity?: string
   /** Valor total da comanda embutido no QR. */
   amount: number
   /** Identificador curto da comanda (máx. 25 caracteres, sem espaços). */
@@ -27,7 +27,7 @@ interface PixQrCodeProps {
 export default function PixQrCode({
   pixKey,
   merchantName,
-  merchantCity,
+  merchantCity = 'SAO PAULO',
   amount,
   reference,
   showCopyPaste = true,

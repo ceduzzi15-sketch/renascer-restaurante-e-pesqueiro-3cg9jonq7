@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Search, UtensilsCrossed } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { fetchMenuFolders, groupCategoriesByFolder, itemsOfCategory } from '@/services/menu'
@@ -63,6 +63,7 @@ export default function CustomerMenuView() {
 
       {total === 0 ? (
         <EmptyState
+          icon={UtensilsCrossed}
           title={term ? 'Nenhum item encontrado' : 'Cardápio em atualização'}
           description={
             term
